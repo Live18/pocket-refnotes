@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { Settings2, X } from "lucide-react";
 import { usePermissions, type SectionKey } from "@/lib/permissions";
+import { useAdmin } from "@/lib/admin";
 
 export function DevPanel() {
   const [open, setOpen] = useState(false);
   const { sections, toggleAccess } = usePermissions();
+  const { admin, toggle: toggleAdmin } = useAdmin();
   const keys: SectionKey[] = ["journal", "observation", "mentor"];
 
   return (
@@ -36,6 +38,19 @@ export function DevPanel() {
               </li>
             ))}
           </ul>
+          <div className="mt-4 border-t border-border pt-3">
+            <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+              Dev · View
+            </p>
+            <button
+              onClick={toggleAdmin}
+              className={`mt-2 w-full rounded-md border border-border px-2 py-1.5 font-mono text-[10px] uppercase tracking-wider ${
+                admin ? "bg-foreground text-background" : "bg-muted text-muted-foreground"
+              }`}
+            >
+              {admin ? "Admin view: ON" : "Admin view: OFF"}
+            </button>
+          </div>
         </div>
       )}
     </>

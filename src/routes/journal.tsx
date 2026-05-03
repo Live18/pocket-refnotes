@@ -1,6 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { SectionChoice } from "@/components/SectionChoice";
+import { createFileRoute, Outlet } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/journal")({
-  component: () => <SectionChoice title="Journal" newLabel="New Journal Entry" openLabel="Open Previous Journals" />,
+  component: () => <Outlet />,
 });
