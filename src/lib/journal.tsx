@@ -1,5 +1,13 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
+export interface GameMeta {
+  gameDateTime: string; // ISO
+  venue: string;
+  homeTeam: string;
+  visitingTeam: string;
+  crew: string;
+}
+
 export interface JournalEntry {
   id: string;
   title: string;
@@ -9,6 +17,8 @@ export interface JournalEntry {
   updatedAt: string; // ISO
   editedAt?: string; // ISO of last user edit (after creation)
   sharedAt?: string; // ISO when first shared with mentor; undefined = never shared
+  game?: GameMeta;
+  notifyRecipients?: string[]; // emails notified on save & share
 }
 
 const STORAGE_KEY = "refnotes.journal.v1";
@@ -35,7 +45,7 @@ const seed = (): JournalEntry[] => {
 interface Ctx {
   entries: JournalEntry[];
   get: (id: string) => JournalEntry | undefined;
-  create: (data: { title: string; body: string; tags?: string[] }) => JournalEntry;
+  create: (data: { title: string; body: string; tags?: string[]; game?: GameMeta; notifyRecipients?: string[]; share?: boolean }) => JournalEntry;
   update: (id: string, patch: Partial<Pick<JournalEntry, "title" | "body" | "tags">>) => void;
   remove: (ids: string[]) => void;
   setShared: (ids: string[], shared: boolean) => void;
@@ -64,7 +74,7 @@ export function JournalProvider({ children }: { children: ReactNode }) {
   const value = useMemo<Ctx>(() => ({
     entries: [...entries].sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
     get: (id) => entries.find((e) => e.id === id),
-    create: ({ title, body, tags = [] }) => {
+    create: ({ title, body, tags = [], game, notifyRecipients, share }) => {
       const now = new Date().toISOString();
       const entry: JournalEntry = {
         id: crypto.randomUUID(),
@@ -73,6 +83,9 @@ export function JournalProvider({ children }: { children: ReactNode }) {
         tags,
         createdAt: now,
         updatedAt: now,
+        game,
+        notifyRecipients,
+        sharedAt: share ? now : undefined,
       };
       setEntries((prev) => [entry, ...prev]);
       return entry;
