@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Plus, FolderOpen } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 
-export const Route = createFileRoute("/journal")({
+export const Route = createFileRoute("/journal/")({
   component: JournalChoice,
 });
 
