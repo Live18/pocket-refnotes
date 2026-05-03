@@ -13,6 +13,7 @@ import { Route as ObservationRouteImport } from './routes/observation'
 import { Route as MentorRouteImport } from './routes/mentor'
 import { Route as JournalRouteImport } from './routes/journal'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as JournalNewRouteImport } from './routes/journal.new'
 
 const ObservationRoute = ObservationRouteImport.update({
   id: '/observation',
@@ -34,37 +35,51 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const JournalNewRoute = JournalNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => JournalRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/journal': typeof JournalRoute
+  '/journal': typeof JournalRouteWithChildren
   '/mentor': typeof MentorRoute
   '/observation': typeof ObservationRoute
+  '/journal/new': typeof JournalNewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/journal': typeof JournalRoute
+  '/journal': typeof JournalRouteWithChildren
   '/mentor': typeof MentorRoute
   '/observation': typeof ObservationRoute
+  '/journal/new': typeof JournalNewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/journal': typeof JournalRoute
+  '/journal': typeof JournalRouteWithChildren
   '/mentor': typeof MentorRoute
   '/observation': typeof ObservationRoute
+  '/journal/new': typeof JournalNewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/journal' | '/mentor' | '/observation'
+  fullPaths: '/' | '/journal' | '/mentor' | '/observation' | '/journal/new'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/journal' | '/mentor' | '/observation'
-  id: '__root__' | '/' | '/journal' | '/mentor' | '/observation'
+  to: '/' | '/journal' | '/mentor' | '/observation' | '/journal/new'
+  id:
+    | '__root__'
+    | '/'
+    | '/journal'
+    | '/mentor'
+    | '/observation'
+    | '/journal/new'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  JournalRoute: typeof JournalRoute
+  JournalRoute: typeof JournalRouteWithChildren
   MentorRoute: typeof MentorRoute
   ObservationRoute: typeof ObservationRoute
 }
@@ -99,12 +114,30 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/journal/new': {
+      id: '/journal/new'
+      path: '/new'
+      fullPath: '/journal/new'
+      preLoaderRoute: typeof JournalNewRouteImport
+      parentRoute: typeof JournalRoute
+    }
   }
 }
 
+interface JournalRouteChildren {
+  JournalNewRoute: typeof JournalNewRoute
+}
+
+const JournalRouteChildren: JournalRouteChildren = {
+  JournalNewRoute: JournalNewRoute,
+}
+
+const JournalRouteWithChildren =
+  JournalRoute._addFileChildren(JournalRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  JournalRoute: JournalRoute,
+  JournalRoute: JournalRouteWithChildren,
   MentorRoute: MentorRoute,
   ObservationRoute: ObservationRoute,
 }
