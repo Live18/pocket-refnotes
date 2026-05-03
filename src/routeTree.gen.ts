@@ -14,6 +14,8 @@ import { Route as MentorRouteImport } from './routes/mentor'
 import { Route as JournalRouteImport } from './routes/journal'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as JournalNewRouteImport } from './routes/journal.new'
+import { Route as JournalEntriesRouteImport } from './routes/journal.entries'
+import { Route as JournalEntriesIdRouteImport } from './routes/journal.entries.$id'
 
 const ObservationRoute = ObservationRouteImport.update({
   id: '/observation',
@@ -40,20 +42,34 @@ const JournalNewRoute = JournalNewRouteImport.update({
   path: '/new',
   getParentRoute: () => JournalRoute,
 } as any)
+const JournalEntriesRoute = JournalEntriesRouteImport.update({
+  id: '/entries',
+  path: '/entries',
+  getParentRoute: () => JournalRoute,
+} as any)
+const JournalEntriesIdRoute = JournalEntriesIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => JournalEntriesRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/journal': typeof JournalRouteWithChildren
   '/mentor': typeof MentorRoute
   '/observation': typeof ObservationRoute
+  '/journal/entries': typeof JournalEntriesRouteWithChildren
   '/journal/new': typeof JournalNewRoute
+  '/journal/entries/$id': typeof JournalEntriesIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/journal': typeof JournalRouteWithChildren
   '/mentor': typeof MentorRoute
   '/observation': typeof ObservationRoute
+  '/journal/entries': typeof JournalEntriesRouteWithChildren
   '/journal/new': typeof JournalNewRoute
+  '/journal/entries/$id': typeof JournalEntriesIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -61,20 +77,38 @@ export interface FileRoutesById {
   '/journal': typeof JournalRouteWithChildren
   '/mentor': typeof MentorRoute
   '/observation': typeof ObservationRoute
+  '/journal/entries': typeof JournalEntriesRouteWithChildren
   '/journal/new': typeof JournalNewRoute
+  '/journal/entries/$id': typeof JournalEntriesIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/journal' | '/mentor' | '/observation' | '/journal/new'
+  fullPaths:
+    | '/'
+    | '/journal'
+    | '/mentor'
+    | '/observation'
+    | '/journal/entries'
+    | '/journal/new'
+    | '/journal/entries/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/journal' | '/mentor' | '/observation' | '/journal/new'
+  to:
+    | '/'
+    | '/journal'
+    | '/mentor'
+    | '/observation'
+    | '/journal/entries'
+    | '/journal/new'
+    | '/journal/entries/$id'
   id:
     | '__root__'
     | '/'
     | '/journal'
     | '/mentor'
     | '/observation'
+    | '/journal/entries'
     | '/journal/new'
+    | '/journal/entries/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -121,14 +155,42 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof JournalNewRouteImport
       parentRoute: typeof JournalRoute
     }
+    '/journal/entries': {
+      id: '/journal/entries'
+      path: '/entries'
+      fullPath: '/journal/entries'
+      preLoaderRoute: typeof JournalEntriesRouteImport
+      parentRoute: typeof JournalRoute
+    }
+    '/journal/entries/$id': {
+      id: '/journal/entries/$id'
+      path: '/$id'
+      fullPath: '/journal/entries/$id'
+      preLoaderRoute: typeof JournalEntriesIdRouteImport
+      parentRoute: typeof JournalEntriesRoute
+    }
   }
 }
 
+interface JournalEntriesRouteChildren {
+  JournalEntriesIdRoute: typeof JournalEntriesIdRoute
+}
+
+const JournalEntriesRouteChildren: JournalEntriesRouteChildren = {
+  JournalEntriesIdRoute: JournalEntriesIdRoute,
+}
+
+const JournalEntriesRouteWithChildren = JournalEntriesRoute._addFileChildren(
+  JournalEntriesRouteChildren,
+)
+
 interface JournalRouteChildren {
+  JournalEntriesRoute: typeof JournalEntriesRouteWithChildren
   JournalNewRoute: typeof JournalNewRoute
 }
 
 const JournalRouteChildren: JournalRouteChildren = {
+  JournalEntriesRoute: JournalEntriesRouteWithChildren,
   JournalNewRoute: JournalNewRoute,
 }
 
