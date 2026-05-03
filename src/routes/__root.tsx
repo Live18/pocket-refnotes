@@ -1,6 +1,8 @@
 import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 import { ThemeProvider } from "@/lib/theme";
 import { PermissionsProvider } from "@/lib/permissions";
+import { JournalProvider } from "@/lib/journal";
+import { AdminProvider } from "@/lib/admin";
 import { BottomTabBar } from "@/components/BottomTabBar";
 import { DevPanel } from "@/components/DevPanel";
 import appCss from "../styles.css?url";
@@ -61,15 +63,19 @@ function RootShell({ children }: { children: React.ReactNode }) {
 function RootComponent() {
   return (
     <ThemeProvider>
-      <PermissionsProvider>
-        <div className="mx-auto flex min-h-screen max-w-md flex-col bg-background">
-          <main className="flex-1 pb-2">
-            <Outlet />
-          </main>
-          <BottomTabBar />
-          <DevPanel />
-        </div>
-      </PermissionsProvider>
+      <AdminProvider>
+        <PermissionsProvider>
+          <JournalProvider>
+            <div className="mx-auto flex min-h-screen max-w-md flex-col bg-background">
+              <main className="flex-1 pb-2">
+                <Outlet />
+              </main>
+              <BottomTabBar />
+              <DevPanel />
+            </div>
+          </JournalProvider>
+        </PermissionsProvider>
+      </AdminProvider>
     </ThemeProvider>
   );
 }
