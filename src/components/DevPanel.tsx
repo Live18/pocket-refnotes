@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Settings2, X } from "lucide-react";
+import { Settings2, X, Sparkles } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { usePermissions, type SectionKey } from "@/lib/permissions";
 import { useAdmin } from "@/lib/admin";
 
@@ -50,6 +51,18 @@ export function DevPanel() {
             >
               {admin ? "Admin view: ON" : "Admin view: OFF"}
             </button>
+          </div>
+          <div className="mt-4 border-t border-border pt-3">
+            <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+              Dev · Playground
+            </p>
+            <Link
+              to="/playground/animations"
+              onClick={() => setOpen(false)}
+              className="mt-2 flex items-center justify-center gap-1.5 rounded-md border border-border bg-muted px-2 py-1.5 font-mono text-[10px] uppercase tracking-wider hover:bg-accent"
+            >
+              <Sparkles size={11} /> Animations
+            </Link>
           </div>
         </div>
       )}
