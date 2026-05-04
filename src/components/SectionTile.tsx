@@ -9,7 +9,7 @@ interface Props {
 }
 
 const formatDate = (iso: string) =>
-  new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  new Date(iso + "T00:00:00Z").toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
 
 export function SectionTile({ section, to, variant = "stack" }: Props) {
   const isHero = variant === "hero";

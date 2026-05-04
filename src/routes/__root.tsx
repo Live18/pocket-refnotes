@@ -4,6 +4,7 @@ import { PermissionsProvider } from "@/lib/permissions";
 import { JournalProvider } from "@/lib/journal";
 import { AdminProvider } from "@/lib/admin";
 import { BottomTabBar } from "@/components/BottomTabBar";
+import { RouteTransition } from "@/components/RouteTransition";
 import { DevPanel } from "@/components/DevPanel";
 import appCss from "../styles.css?url";
 
@@ -68,7 +69,9 @@ function RootComponent() {
           <JournalProvider>
             <div className="mx-auto flex min-h-screen max-w-md flex-col bg-background">
               <main className="flex-1 pb-2">
-                <Outlet />
+                <RouteTransition>
+                  <Outlet />
+                </RouteTransition>
               </main>
               <BottomTabBar />
               <DevPanel />
