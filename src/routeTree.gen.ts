@@ -14,6 +14,7 @@ import { Route as MentorRouteImport } from './routes/mentor'
 import { Route as JournalRouteImport } from './routes/journal'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as JournalIndexRouteImport } from './routes/journal.index'
+import { Route as PlaygroundAnimationsRouteImport } from './routes/playground.animations'
 import { Route as JournalNewRouteImport } from './routes/journal.new'
 import { Route as JournalEntriesRouteImport } from './routes/journal.entries'
 import { Route as JournalEntriesIdRouteImport } from './routes/journal.entries.$id'
@@ -43,6 +44,11 @@ const JournalIndexRoute = JournalIndexRouteImport.update({
   path: '/',
   getParentRoute: () => JournalRoute,
 } as any)
+const PlaygroundAnimationsRoute = PlaygroundAnimationsRouteImport.update({
+  id: '/playground/animations',
+  path: '/playground/animations',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const JournalNewRoute = JournalNewRouteImport.update({
   id: '/new',
   path: '/new',
@@ -66,6 +72,7 @@ export interface FileRoutesByFullPath {
   '/observation': typeof ObservationRoute
   '/journal/entries': typeof JournalEntriesRouteWithChildren
   '/journal/new': typeof JournalNewRoute
+  '/playground/animations': typeof PlaygroundAnimationsRoute
   '/journal/': typeof JournalIndexRoute
   '/journal/entries/$id': typeof JournalEntriesIdRoute
 }
@@ -75,6 +82,7 @@ export interface FileRoutesByTo {
   '/observation': typeof ObservationRoute
   '/journal/entries': typeof JournalEntriesRouteWithChildren
   '/journal/new': typeof JournalNewRoute
+  '/playground/animations': typeof PlaygroundAnimationsRoute
   '/journal': typeof JournalIndexRoute
   '/journal/entries/$id': typeof JournalEntriesIdRoute
 }
@@ -86,6 +94,7 @@ export interface FileRoutesById {
   '/observation': typeof ObservationRoute
   '/journal/entries': typeof JournalEntriesRouteWithChildren
   '/journal/new': typeof JournalNewRoute
+  '/playground/animations': typeof PlaygroundAnimationsRoute
   '/journal/': typeof JournalIndexRoute
   '/journal/entries/$id': typeof JournalEntriesIdRoute
 }
@@ -98,6 +107,7 @@ export interface FileRouteTypes {
     | '/observation'
     | '/journal/entries'
     | '/journal/new'
+    | '/playground/animations'
     | '/journal/'
     | '/journal/entries/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -107,6 +117,7 @@ export interface FileRouteTypes {
     | '/observation'
     | '/journal/entries'
     | '/journal/new'
+    | '/playground/animations'
     | '/journal'
     | '/journal/entries/$id'
   id:
@@ -117,6 +128,7 @@ export interface FileRouteTypes {
     | '/observation'
     | '/journal/entries'
     | '/journal/new'
+    | '/playground/animations'
     | '/journal/'
     | '/journal/entries/$id'
   fileRoutesById: FileRoutesById
@@ -126,6 +138,7 @@ export interface RootRouteChildren {
   JournalRoute: typeof JournalRouteWithChildren
   MentorRoute: typeof MentorRoute
   ObservationRoute: typeof ObservationRoute
+  PlaygroundAnimationsRoute: typeof PlaygroundAnimationsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -164,6 +177,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/journal/'
       preLoaderRoute: typeof JournalIndexRouteImport
       parentRoute: typeof JournalRoute
+    }
+    '/playground/animations': {
+      id: '/playground/animations'
+      path: '/playground/animations'
+      fullPath: '/playground/animations'
+      preLoaderRoute: typeof PlaygroundAnimationsRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/journal/new': {
       id: '/journal/new'
@@ -221,6 +241,7 @@ const rootRouteChildren: RootRouteChildren = {
   JournalRoute: JournalRouteWithChildren,
   MentorRoute: MentorRoute,
   ObservationRoute: ObservationRoute,
+  PlaygroundAnimationsRoute: PlaygroundAnimationsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
