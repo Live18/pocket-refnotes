@@ -9,7 +9,7 @@ interface Props {
 }
 
 const formatDate = (iso: string) =>
-  new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  new Date(iso + "T00:00:00Z").toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
 
 export function SectionTile({ section, to, variant = "stack" }: Props) {
   const isHero = variant === "hero";
@@ -39,7 +39,7 @@ export function SectionTile({ section, to, variant = "stack" }: Props) {
   return (
     <Link
       to={to}
-      className={`${base} bg-card text-card-foreground hover:-translate-y-0.5`}
+      className={`${base} bg-card text-card-foreground transition-transform duration-200 hover:scale-[1.02] active:scale-95`}
       style={{ boxShadow: isHero ? "var(--shadow-tile-hero)" : "var(--shadow-tile)" }}
     >
       <div className="flex items-center justify-between">
