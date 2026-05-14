@@ -18,6 +18,7 @@ import { Route as PlaygroundAnimationsRouteImport } from './routes/playground.an
 import { Route as JournalNewRouteImport } from './routes/journal.new'
 import { Route as JournalEntriesRouteImport } from './routes/journal.entries'
 import { Route as JournalEntriesIdRouteImport } from './routes/journal.entries.$id'
+import { Route as ApiPublicReportCallbackRouteImport } from './routes/api/public/report-callback'
 
 const ObservationRoute = ObservationRouteImport.update({
   id: '/observation',
@@ -64,6 +65,11 @@ const JournalEntriesIdRoute = JournalEntriesIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => JournalEntriesRoute,
 } as any)
+const ApiPublicReportCallbackRoute = ApiPublicReportCallbackRouteImport.update({
+  id: '/api/public/report-callback',
+  path: '/api/public/report-callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -74,6 +80,7 @@ export interface FileRoutesByFullPath {
   '/journal/new': typeof JournalNewRoute
   '/playground/animations': typeof PlaygroundAnimationsRoute
   '/journal/': typeof JournalIndexRoute
+  '/api/public/report-callback': typeof ApiPublicReportCallbackRoute
   '/journal/entries/$id': typeof JournalEntriesIdRoute
 }
 export interface FileRoutesByTo {
@@ -84,6 +91,7 @@ export interface FileRoutesByTo {
   '/journal/new': typeof JournalNewRoute
   '/playground/animations': typeof PlaygroundAnimationsRoute
   '/journal': typeof JournalIndexRoute
+  '/api/public/report-callback': typeof ApiPublicReportCallbackRoute
   '/journal/entries/$id': typeof JournalEntriesIdRoute
 }
 export interface FileRoutesById {
@@ -96,6 +104,7 @@ export interface FileRoutesById {
   '/journal/new': typeof JournalNewRoute
   '/playground/animations': typeof PlaygroundAnimationsRoute
   '/journal/': typeof JournalIndexRoute
+  '/api/public/report-callback': typeof ApiPublicReportCallbackRoute
   '/journal/entries/$id': typeof JournalEntriesIdRoute
 }
 export interface FileRouteTypes {
@@ -109,6 +118,7 @@ export interface FileRouteTypes {
     | '/journal/new'
     | '/playground/animations'
     | '/journal/'
+    | '/api/public/report-callback'
     | '/journal/entries/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -119,6 +129,7 @@ export interface FileRouteTypes {
     | '/journal/new'
     | '/playground/animations'
     | '/journal'
+    | '/api/public/report-callback'
     | '/journal/entries/$id'
   id:
     | '__root__'
@@ -130,6 +141,7 @@ export interface FileRouteTypes {
     | '/journal/new'
     | '/playground/animations'
     | '/journal/'
+    | '/api/public/report-callback'
     | '/journal/entries/$id'
   fileRoutesById: FileRoutesById
 }
@@ -139,6 +151,7 @@ export interface RootRouteChildren {
   MentorRoute: typeof MentorRoute
   ObservationRoute: typeof ObservationRoute
   PlaygroundAnimationsRoute: typeof PlaygroundAnimationsRoute
+  ApiPublicReportCallbackRoute: typeof ApiPublicReportCallbackRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -206,6 +219,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof JournalEntriesIdRouteImport
       parentRoute: typeof JournalEntriesRoute
     }
+    '/api/public/report-callback': {
+      id: '/api/public/report-callback'
+      path: '/api/public/report-callback'
+      fullPath: '/api/public/report-callback'
+      preLoaderRoute: typeof ApiPublicReportCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -242,7 +262,17 @@ const rootRouteChildren: RootRouteChildren = {
   MentorRoute: MentorRoute,
   ObservationRoute: ObservationRoute,
   PlaygroundAnimationsRoute: PlaygroundAnimationsRoute,
+  ApiPublicReportCallbackRoute: ApiPublicReportCallbackRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
