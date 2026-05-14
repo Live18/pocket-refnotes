@@ -3,6 +3,7 @@ import { ThemeProvider } from "@/lib/theme";
 import { PermissionsProvider } from "@/lib/permissions";
 import { JournalProvider } from "@/lib/journal";
 import { AdminProvider } from "@/lib/admin";
+import { AuthProvider } from "@/lib/auth-context";
 import { BottomTabBar } from "@/components/BottomTabBar";
 import { RouteTransition } from "@/components/RouteTransition";
 import { DevPanel } from "@/components/DevPanel";
@@ -64,21 +65,23 @@ function RootShell({ children }: { children: React.ReactNode }) {
 function RootComponent() {
   return (
     <ThemeProvider>
-      <AdminProvider>
-        <PermissionsProvider>
-          <JournalProvider>
-            <div className="mx-auto flex min-h-screen max-w-md flex-col bg-background">
-              <main className="flex-1 pb-2">
-                <RouteTransition>
-                  <Outlet />
-                </RouteTransition>
-              </main>
-              <BottomTabBar />
-              <DevPanel />
-            </div>
-          </JournalProvider>
-        </PermissionsProvider>
-      </AdminProvider>
+      <AuthProvider>
+        <AdminProvider>
+          <PermissionsProvider>
+            <JournalProvider>
+              <div className="mx-auto flex min-h-screen max-w-md flex-col bg-background">
+                <main className="flex-1 pb-2">
+                  <RouteTransition>
+                    <Outlet />
+                  </RouteTransition>
+                </main>
+                <BottomTabBar />
+                <DevPanel />
+              </div>
+            </JournalProvider>
+          </PermissionsProvider>
+        </AdminProvider>
+      </AuthProvider>
     </ThemeProvider>
   );
 }
