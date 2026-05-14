@@ -11,13 +11,22 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ObservationRouteImport } from './routes/observation'
 import { Route as MentorRouteImport } from './routes/mentor'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as JournalRouteImport } from './routes/journal'
-import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as JournalIndexRouteImport } from './routes/journal.index'
+import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as PlaygroundAnimationsRouteImport } from './routes/playground.animations'
 import { Route as JournalNewRouteImport } from './routes/journal.new'
 import { Route as JournalEntriesRouteImport } from './routes/journal.entries'
+import { Route as AcceptInviteTokenRouteImport } from './routes/accept-invite.$token'
+import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
+import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as JournalEntriesIdRouteImport } from './routes/journal.entries.$id'
+import { Route as ApiPublicReportCallbackRouteImport } from './routes/api/public/report-callback'
+import { Route as AuthenticatedGamesNewRouteImport } from './routes/_authenticated/games.new'
+import { Route as AuthenticatedGamesGameIdRouteImport } from './routes/_authenticated/games.$gameId'
+import { Route as AuthenticatedAdminInvitesRouteImport } from './routes/_authenticated/admin.invites'
 
 const ObservationRoute = ObservationRouteImport.update({
   id: '/observation',
@@ -29,20 +38,29 @@ const MentorRoute = MentorRouteImport.update({
   path: '/mentor',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const JournalRoute = JournalRouteImport.update({
   id: '/journal',
   path: '/journal',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const AuthenticatedRoute = AuthenticatedRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
 const JournalIndexRoute = JournalIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => JournalRoute,
+} as any)
+const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
 const PlaygroundAnimationsRoute = PlaygroundAnimationsRouteImport.update({
   id: '/playground/animations',
@@ -59,86 +77,174 @@ const JournalEntriesRoute = JournalEntriesRouteImport.update({
   path: '/entries',
   getParentRoute: () => JournalRoute,
 } as any)
+const AcceptInviteTokenRoute = AcceptInviteTokenRouteImport.update({
+  id: '/accept-invite/$token',
+  path: '/accept-invite/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedAdminRoute,
+} as any)
 const JournalEntriesIdRoute = JournalEntriesIdRouteImport.update({
   id: '/$id',
   path: '/$id',
   getParentRoute: () => JournalEntriesRoute,
 } as any)
+const ApiPublicReportCallbackRoute = ApiPublicReportCallbackRouteImport.update({
+  id: '/api/public/report-callback',
+  path: '/api/public/report-callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedGamesNewRoute = AuthenticatedGamesNewRouteImport.update({
+  id: '/games/new',
+  path: '/games/new',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedGamesGameIdRoute =
+  AuthenticatedGamesGameIdRouteImport.update({
+    id: '/games/$gameId',
+    path: '/games/$gameId',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedAdminInvitesRoute =
+  AuthenticatedAdminInvitesRouteImport.update({
+    id: '/invites',
+    path: '/invites',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
+  '/': typeof AuthenticatedIndexRoute
   '/journal': typeof JournalRouteWithChildren
+  '/login': typeof LoginRoute
   '/mentor': typeof MentorRoute
   '/observation': typeof ObservationRoute
+  '/admin': typeof AuthenticatedAdminRouteWithChildren
+  '/accept-invite/$token': typeof AcceptInviteTokenRoute
   '/journal/entries': typeof JournalEntriesRouteWithChildren
   '/journal/new': typeof JournalNewRoute
   '/playground/animations': typeof PlaygroundAnimationsRoute
   '/journal/': typeof JournalIndexRoute
+  '/admin/invites': typeof AuthenticatedAdminInvitesRoute
+  '/games/$gameId': typeof AuthenticatedGamesGameIdRoute
+  '/games/new': typeof AuthenticatedGamesNewRoute
+  '/api/public/report-callback': typeof ApiPublicReportCallbackRoute
   '/journal/entries/$id': typeof JournalEntriesIdRoute
+  '/admin/': typeof AuthenticatedAdminIndexRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
+  '/login': typeof LoginRoute
   '/mentor': typeof MentorRoute
   '/observation': typeof ObservationRoute
+  '/accept-invite/$token': typeof AcceptInviteTokenRoute
   '/journal/entries': typeof JournalEntriesRouteWithChildren
   '/journal/new': typeof JournalNewRoute
   '/playground/animations': typeof PlaygroundAnimationsRoute
+  '/': typeof AuthenticatedIndexRoute
   '/journal': typeof JournalIndexRoute
+  '/admin/invites': typeof AuthenticatedAdminInvitesRoute
+  '/games/$gameId': typeof AuthenticatedGamesGameIdRoute
+  '/games/new': typeof AuthenticatedGamesNewRoute
+  '/api/public/report-callback': typeof ApiPublicReportCallbackRoute
   '/journal/entries/$id': typeof JournalEntriesIdRoute
+  '/admin': typeof AuthenticatedAdminIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/journal': typeof JournalRouteWithChildren
+  '/login': typeof LoginRoute
   '/mentor': typeof MentorRoute
   '/observation': typeof ObservationRoute
+  '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
+  '/accept-invite/$token': typeof AcceptInviteTokenRoute
   '/journal/entries': typeof JournalEntriesRouteWithChildren
   '/journal/new': typeof JournalNewRoute
   '/playground/animations': typeof PlaygroundAnimationsRoute
+  '/_authenticated/': typeof AuthenticatedIndexRoute
   '/journal/': typeof JournalIndexRoute
+  '/_authenticated/admin/invites': typeof AuthenticatedAdminInvitesRoute
+  '/_authenticated/games/$gameId': typeof AuthenticatedGamesGameIdRoute
+  '/_authenticated/games/new': typeof AuthenticatedGamesNewRoute
+  '/api/public/report-callback': typeof ApiPublicReportCallbackRoute
   '/journal/entries/$id': typeof JournalEntriesIdRoute
+  '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/journal'
+    | '/login'
     | '/mentor'
     | '/observation'
+    | '/admin'
+    | '/accept-invite/$token'
     | '/journal/entries'
     | '/journal/new'
     | '/playground/animations'
     | '/journal/'
+    | '/admin/invites'
+    | '/games/$gameId'
+    | '/games/new'
+    | '/api/public/report-callback'
     | '/journal/entries/$id'
+    | '/admin/'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/'
+    | '/login'
     | '/mentor'
     | '/observation'
+    | '/accept-invite/$token'
     | '/journal/entries'
     | '/journal/new'
     | '/playground/animations'
+    | '/'
     | '/journal'
+    | '/admin/invites'
+    | '/games/$gameId'
+    | '/games/new'
+    | '/api/public/report-callback'
     | '/journal/entries/$id'
+    | '/admin'
   id:
     | '__root__'
-    | '/'
+    | '/_authenticated'
     | '/journal'
+    | '/login'
     | '/mentor'
     | '/observation'
+    | '/_authenticated/admin'
+    | '/accept-invite/$token'
     | '/journal/entries'
     | '/journal/new'
     | '/playground/animations'
+    | '/_authenticated/'
     | '/journal/'
+    | '/_authenticated/admin/invites'
+    | '/_authenticated/games/$gameId'
+    | '/_authenticated/games/new'
+    | '/api/public/report-callback'
     | '/journal/entries/$id'
+    | '/_authenticated/admin/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
+  AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   JournalRoute: typeof JournalRouteWithChildren
+  LoginRoute: typeof LoginRoute
   MentorRoute: typeof MentorRoute
   ObservationRoute: typeof ObservationRoute
+  AcceptInviteTokenRoute: typeof AcceptInviteTokenRoute
   PlaygroundAnimationsRoute: typeof PlaygroundAnimationsRoute
+  ApiPublicReportCallbackRoute: typeof ApiPublicReportCallbackRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -157,6 +263,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MentorRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/journal': {
       id: '/journal'
       path: '/journal'
@@ -164,11 +277,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof JournalRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+      preLoaderRoute: typeof AuthenticatedRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/journal/': {
@@ -177,6 +290,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/journal/'
       preLoaderRoute: typeof JournalIndexRouteImport
       parentRoute: typeof JournalRoute
+    }
+    '/_authenticated/': {
+      id: '/_authenticated/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
     '/playground/animations': {
       id: '/playground/animations'
@@ -199,6 +319,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof JournalEntriesRouteImport
       parentRoute: typeof JournalRoute
     }
+    '/accept-invite/$token': {
+      id: '/accept-invite/$token'
+      path: '/accept-invite/$token'
+      fullPath: '/accept-invite/$token'
+      preLoaderRoute: typeof AcceptInviteTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/admin': {
+      id: '/_authenticated/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AuthenticatedAdminRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/admin/': {
+      id: '/_authenticated/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/journal/entries/$id': {
       id: '/journal/entries/$id'
       path: '/$id'
@@ -206,8 +347,67 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof JournalEntriesIdRouteImport
       parentRoute: typeof JournalEntriesRoute
     }
+    '/api/public/report-callback': {
+      id: '/api/public/report-callback'
+      path: '/api/public/report-callback'
+      fullPath: '/api/public/report-callback'
+      preLoaderRoute: typeof ApiPublicReportCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/games/new': {
+      id: '/_authenticated/games/new'
+      path: '/games/new'
+      fullPath: '/games/new'
+      preLoaderRoute: typeof AuthenticatedGamesNewRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/games/$gameId': {
+      id: '/_authenticated/games/$gameId'
+      path: '/games/$gameId'
+      fullPath: '/games/$gameId'
+      preLoaderRoute: typeof AuthenticatedGamesGameIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/admin/invites': {
+      id: '/_authenticated/admin/invites'
+      path: '/invites'
+      fullPath: '/admin/invites'
+      preLoaderRoute: typeof AuthenticatedAdminInvitesRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
   }
 }
+
+interface AuthenticatedAdminRouteChildren {
+  AuthenticatedAdminInvitesRoute: typeof AuthenticatedAdminInvitesRoute
+  AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
+}
+
+const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
+  AuthenticatedAdminInvitesRoute: AuthenticatedAdminInvitesRoute,
+  AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
+}
+
+const AuthenticatedAdminRouteWithChildren =
+  AuthenticatedAdminRoute._addFileChildren(AuthenticatedAdminRouteChildren)
+
+interface AuthenticatedRouteChildren {
+  AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
+  AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedGamesGameIdRoute: typeof AuthenticatedGamesGameIdRoute
+  AuthenticatedGamesNewRoute: typeof AuthenticatedGamesNewRoute
+}
+
+const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
+  AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedGamesGameIdRoute: AuthenticatedGamesGameIdRoute,
+  AuthenticatedGamesNewRoute: AuthenticatedGamesNewRoute,
+}
+
+const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
+  AuthenticatedRouteChildren,
+)
 
 interface JournalEntriesRouteChildren {
   JournalEntriesIdRoute: typeof JournalEntriesIdRoute
@@ -237,21 +437,25 @@ const JournalRouteWithChildren =
   JournalRoute._addFileChildren(JournalRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
+  AuthenticatedRoute: AuthenticatedRouteWithChildren,
   JournalRoute: JournalRouteWithChildren,
+  LoginRoute: LoginRoute,
   MentorRoute: MentorRoute,
   ObservationRoute: ObservationRoute,
+  AcceptInviteTokenRoute: AcceptInviteTokenRoute,
   PlaygroundAnimationsRoute: PlaygroundAnimationsRoute,
+  ApiPublicReportCallbackRoute: ApiPublicReportCallbackRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
 
 import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
+import type { startInstance } from './start.ts'
 declare module '@tanstack/react-start' {
   interface Register {
     ssr: true
     router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
   }
 }
