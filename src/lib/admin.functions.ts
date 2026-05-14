@@ -1,0 +1,140 @@
+import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
+
+async function assertAdmin(
+  supabase: any,
+  userId: string,
+): Promise<string> {
+  const { data: profile } = await supabase
+    .from("profiles").select("org_id").eq("id", userId).maybeSingle();
+  if (!profile?.org_id) throw new Error("No organization assigned");
+  const { data: role } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId)
+    .eq("org_id", profile.org_id)
+    .eq("role", "admin")
+    .maybeSingle();
+  if (!role) throw new Error("Forbidden: admin role required");
+  return profile.org_id as string;
+}
+
+export const listMembers = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const orgId = await assertAdmin(context.supabase, context.userId);
+
+    const { data: profiles, error } = await context.supabase
+      .from("profiles")
+      .select("id, display_name, email, created_at")
+      .eq("org_id", orgId);
+    if (error) throw new Error(error.message);
+
+    const ids = (profiles ?? []).map((p) => p.id);
+    const [{ data: roles }, { data: lastEntries }] = await Promise.all([
+      context.supabase.from("user_roles").select("user_id, role").eq("org_id", orgId).in("user_id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"]),
+      // Last entry meta only — never the body.
+      context.supabase
+        .from("entries")
+        .select("author_id, status, saved_at, sent_at, updated_at, game:games(title, game_date)")
+        .in("author_id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"])
+        .order("updated_at", { ascending: false }),
+    ]);
+
+    const roleMap = new Map<string, string[]>();
+    (roles ?? []).forEach((r: any) => {
+      const arr = roleMap.get(r.user_id) ?? [];
+      arr.push(r.role);
+      roleMap.set(r.user_id, arr);
+    });
+    const lastByUser = new Map<string, any>();
+    (lastEntries ?? []).forEach((e: any) => {
+      if (!lastByUser.has(e.author_id)) lastByUser.set(e.author_id, e);
+    });
+
+    return {
+      members: (profiles ?? []).map((p) => ({
+        ...p,
+        roles: roleMap.get(p.id) ?? [],
+        lastEntry: lastByUser.get(p.id) ?? null,
+      })),
+    };
+  });
+
+export const listInvites = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const orgId = await assertAdmin(context.supabase, context.userId);
+    const { data, error } = await context.supabase
+      .from("invites")
+      .select("id, email, role, expires_at, accepted_at, created_at")
+      .eq("org_id", orgId)
+      .order("created_at", { ascending: false });
+    if (error) throw new Error(error.message);
+    return { invites: data ?? [] };
+  });
+
+export const inviteMember = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({
+    email: z.string().email(),
+    role: z.enum(["admin", "member"]).default("member"),
+  }).parse(input))
+  .handler(async ({ data, context }) => {
+    const orgId = await assertAdmin(context.supabase, context.userId);
+    const token = crypto.randomUUID() + "-" + crypto.randomUUID();
+    const { data: invite, error } = await context.supabase
+      .from("invites")
+      .insert({
+        org_id: orgId,
+        email: data.email,
+        role: data.role,
+        token,
+        invited_by: context.userId,
+      })
+      .select()
+      .single();
+    if (error) throw new Error(error.message);
+    // TODO: email the invite link via Resend (handled by Docker worker or here)
+    return { invite, inviteUrl: `/accept-invite/${token}` };
+  });
+
+export const revokeInvite = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const { error } = await context.supabase.from("invites").delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const changeRole = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({
+    userId: z.string().uuid(),
+    role: z.enum(["admin", "member"]),
+  }).parse(input))
+  .handler(async ({ data, context }) => {
+    const orgId = await assertAdmin(context.supabase, context.userId);
+    // Replace any existing role with the new one
+    await context.supabase.from("user_roles").delete().eq("user_id", data.userId).eq("org_id", orgId);
+    const { error } = await context.supabase.from("user_roles").insert({
+      user_id: data.userId, org_id: orgId, role: data.role,
+    });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const removeMember = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ userId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const orgId = await assertAdmin(context.supabase, context.userId);
+    // Use admin client because removing roles + clearing org requires service role
+    await supabaseAdmin.from("user_roles").delete().eq("user_id", data.userId).eq("org_id", orgId);
+    await supabaseAdmin.from("profiles").update({ org_id: null }).eq("id", data.userId);
+    return { ok: true };
+  });
