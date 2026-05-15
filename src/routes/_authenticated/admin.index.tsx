@@ -2,17 +2,24 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { listMembers, changeRole, removeMember } from "@/lib/admin.functions";
+import { useAuth } from "@/lib/auth-context";
+import { isPreviewUserId, previewMocks } from "@/lib/preview-mode";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
   component: MembersPage,
 });
 
 function MembersPage() {
+  const { me } = useAuth();
+  const isPreview = isPreviewUserId(me?.userId);
   const list = useServerFn(listMembers);
   const change = useServerFn(changeRole);
   const remove = useServerFn(removeMember);
   const qc = useQueryClient();
-  const { data, isLoading } = useQuery({ queryKey: ["admin-members"], queryFn: () => list() });
+  const { data, isLoading } = useQuery({
+    queryKey: ["admin-members", isPreview],
+    queryFn: isPreview ? async () => ({ members: previewMocks.members }) : () => list(),
+  });
 
   if (isLoading) return <p className="text-sm text-muted-foreground">Loading…</p>;
   const members = data?.members ?? [];
