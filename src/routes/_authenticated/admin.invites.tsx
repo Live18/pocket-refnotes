@@ -3,17 +3,24 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState, type FormEvent } from "react";
 import { listInvites, inviteMember, revokeInvite } from "@/lib/admin.functions";
+import { useAuth } from "@/lib/auth-context";
+import { isPreviewUserId, previewMocks } from "@/lib/preview-mode";
 
 export const Route = createFileRoute("/_authenticated/admin/invites")({
   component: InvitesPage,
 });
 
 function InvitesPage() {
+  const { me } = useAuth();
+  const isPreview = isPreviewUserId(me?.userId);
   const list = useServerFn(listInvites);
   const invite = useServerFn(inviteMember);
   const revoke = useServerFn(revokeInvite);
   const qc = useQueryClient();
-  const { data } = useQuery({ queryKey: ["admin-invites"], queryFn: () => list() });
+  const { data } = useQuery({
+    queryKey: ["admin-invites", isPreview],
+    queryFn: isPreview ? async () => ({ invites: previewMocks.invites }) : () => list(),
+  });
 
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<"admin" | "member">("member");
@@ -26,6 +33,11 @@ function InvitesPage() {
     e.preventDefault();
     setBusy(true);
     try {
+      if (isPreview) {
+        setLastUrl(`${window.location.origin}/accept-invite/preview-token-${Date.now()}`);
+        setEmail("");
+        return;
+      }
       const res = await invite({ data: { email, role } });
       setEmail("");
       setLastUrl(window.location.origin + res.inviteUrl);
