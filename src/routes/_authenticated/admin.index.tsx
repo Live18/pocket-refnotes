@@ -2,17 +2,24 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { listMembers, changeRole, removeMember } from "@/lib/admin.functions";
+import { useAuth } from "@/lib/auth-context";
+import { isPreviewUserId, previewMocks } from "@/lib/preview-mode";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
   component: MembersPage,
 });
 
 function MembersPage() {
+  const { me } = useAuth();
+  const isPreview = isPreviewUserId(me?.userId);
   const list = useServerFn(listMembers);
   const change = useServerFn(changeRole);
   const remove = useServerFn(removeMember);
   const qc = useQueryClient();
-  const { data, isLoading } = useQuery({ queryKey: ["admin-members"], queryFn: () => list() });
+  const { data, isLoading } = useQuery({
+    queryKey: ["admin-members", isPreview],
+    queryFn: isPreview ? async () => ({ members: previewMocks.members }) : () => list(),
+  });
 
   if (isLoading) return <p className="text-sm text-muted-foreground">Loading…</p>;
   const members = data?.members ?? [];
@@ -34,13 +41,13 @@ function MembersPage() {
               <select
                 className="rounded border border-input bg-background px-2 py-1 text-xs"
                 value={m.roles[0] ?? "member"}
-                onChange={async (e) => { await change({ data: { userId: m.id, role: e.target.value as any } }); refresh(); }}
+                onChange={async (e) => { if (isPreview) return; await change({ data: { userId: m.id, role: e.target.value as any } }); refresh(); }}
               >
                 <option value="member">member</option>
                 <option value="admin">admin</option>
               </select>
               <button
-                onClick={async () => { if (confirm("Remove member?")) { await remove({ data: { userId: m.id } }); refresh(); } }}
+                onClick={async () => { if (confirm("Remove member?")) { if (isPreview) return; await remove({ data: { userId: m.id } }); refresh(); } }}
                 className="rounded border border-destructive/50 px-2 py-1 text-xs text-destructive hover:bg-destructive/10"
               >Remove</button>
             </div>

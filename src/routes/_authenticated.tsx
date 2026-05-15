@@ -7,18 +7,18 @@ export const Route = createFileRoute("/_authenticated")({
 });
 
 function AuthGate() {
-  const { loading, session } = useAuth();
+  const { loading, isAuthenticated } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && !session) {
+    if (!loading && !isAuthenticated) {
       router.navigate({ to: "/login", search: { redirect: window.location.pathname } });
     }
-  }, [loading, session, router]);
+  }, [loading, isAuthenticated, router]);
 
   if (loading) {
     return <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">Loading…</div>;
   }
-  if (!session) return null;
+  if (!isAuthenticated) return null;
   return <Outlet />;
 }

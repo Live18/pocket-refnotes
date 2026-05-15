@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 import { getGame } from "@/lib/games.functions";
 import { getEntryForGame, saveDraft, savePrivate, saveAndSend } from "@/lib/entries.functions";
 import { getJobForEntry } from "@/lib/reports.functions";
+import { useAuth } from "@/lib/auth-context";
+import { isPreviewUserId, previewMocks } from "@/lib/preview-mode";
 
 export const Route = createFileRoute("/_authenticated/games/$gameId")({
   component: EntryEditor,
@@ -12,6 +14,8 @@ export const Route = createFileRoute("/_authenticated/games/$gameId")({
 
 function EntryEditor() {
   const { gameId } = Route.useParams();
+  const { me } = useAuth();
+  const isPreview = isPreviewUserId(me?.userId);
   const fetchGame = useServerFn(getGame);
   const fetchEntry = useServerFn(getEntryForGame);
   const fetchJob = useServerFn(getJobForEntry);
@@ -20,8 +24,14 @@ function EntryEditor() {
   const sendFn = useServerFn(saveAndSend);
   const qc = useQueryClient();
 
-  const game = useQuery({ queryKey: ["game", gameId], queryFn: () => fetchGame({ data: { gameId } }) });
-  const entry = useQuery({ queryKey: ["entry", gameId], queryFn: () => fetchEntry({ data: { gameId } }) });
+  const game = useQuery({
+    queryKey: ["game", gameId, isPreview],
+    queryFn: isPreview ? async () => ({ game: previewMocks.game(gameId) }) : () => fetchGame({ data: { gameId } }),
+  });
+  const entry = useQuery({
+    queryKey: ["entry", gameId, isPreview],
+    queryFn: isPreview ? async () => ({ entry: previewMocks.entry(gameId) }) : () => fetchEntry({ data: { gameId } }),
+  });
 
   const [text, setText] = useState("");
   const [recipient, setRecipient] = useState("");
@@ -38,10 +48,12 @@ function EntryEditor() {
   }, [entry.data?.entry?.id]);
 
   const job = useQuery({
-    queryKey: ["job", entry.data?.entry?.id],
-    queryFn: () => fetchJob({ data: { entryId: entry.data!.entry!.id } }),
+    queryKey: ["job", entry.data?.entry?.id, isPreview],
+    queryFn: isPreview
+      ? async () => ({ job: { status: "sent", last_error: null } })
+      : () => fetchJob({ data: { entryId: entry.data!.entry!.id } }),
     enabled: !!entry.data?.entry?.id && status === "saved_sent",
-    refetchInterval: status === "saved_sent" ? 5000 : false,
+    refetchInterval: !isPreview && status === "saved_sent" ? 5000 : false,
   });
 
   const refresh = () => {
@@ -51,7 +63,7 @@ function EntryEditor() {
 
   // Autosave drafts every 5s when typing.
   useEffect(() => {
-    if (status === "saved_sent") return;
+    if (isPreview || status === "saved_sent") return;
     const t = setTimeout(() => {
       if (text) draftFn({ data: { gameId, body: { text } } }).then(refresh).catch(() => {});
     }, 5000);
@@ -61,13 +73,16 @@ function EntryEditor() {
 
   const onSavePrivate = async () => {
     setBusy(true);
-    try { await privFn({ data: { gameId, body: { text } } }); setStatus("saved_private"); refresh(); }
-    finally { setBusy(false); }
+    try {
+      if (isPreview) { setStatus("saved_private"); return; }
+      await privFn({ data: { gameId, body: { text } } }); setStatus("saved_private"); refresh();
+    } finally { setBusy(false); }
   };
   const onSaveSend = async () => {
     if (!recipient) { alert("Enter recipient email"); return; }
     setBusy(true);
     try {
+      if (isPreview) { setStatus("saved_sent"); return; }
       await sendFn({ data: { gameId, body: { text }, recipientEmail: recipient } });
       setStatus("saved_sent"); refresh();
     } finally { setBusy(false); }
