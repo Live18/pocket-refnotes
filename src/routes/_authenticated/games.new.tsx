@@ -2,6 +2,8 @@ import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useState, type FormEvent } from "react";
 import { createGame } from "@/lib/games.functions";
+import { useAuth } from "@/lib/auth-context";
+import { isPreviewUserId } from "@/lib/preview-mode";
 
 export const Route = createFileRoute("/_authenticated/games/new")({
   component: NewGamePage,
@@ -10,6 +12,8 @@ export const Route = createFileRoute("/_authenticated/games/new")({
 function NewGamePage() {
   const create = useServerFn(createGame);
   const router = useRouter();
+  const { me } = useAuth();
+  const isPreview = isPreviewUserId(me?.userId);
   const [title, setTitle] = useState("");
   const [gameDate, setGameDate] = useState("");
   const [opponent, setOpponent] = useState("");
@@ -20,6 +24,10 @@ function NewGamePage() {
     e.preventDefault();
     setBusy(true);
     try {
+      if (isPreview) {
+        router.navigate({ to: "/games/$gameId", params: { gameId: "preview-game-1" } });
+        return;
+      }
       const res = await create({ data: { title, gameDate: gameDate || null, opponent: opponent || null, location: location || null } });
       router.navigate({ to: "/games/$gameId", params: { gameId: res.game.id } });
     } finally { setBusy(false); }
