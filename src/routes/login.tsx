@@ -12,7 +12,7 @@ export const Route = createFileRoute("/login")({
 });
 
 function LoginPage() {
-  const { session } = useAuth();
+  const { isAuthenticated, previewAs } = useAuth();
   const router = useRouter();
   const { redirect } = Route.useSearch();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
@@ -22,8 +22,8 @@ function LoginPage() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (session) router.navigate({ to: redirect ?? "/" });
-  }, [session, router, redirect]);
+    if (isAuthenticated) router.navigate({ to: redirect ?? "/" });
+  }, [isAuthenticated, router, redirect]);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
