@@ -80,7 +80,7 @@ function InvitesPage() {
             </div>
             {!iv.accepted_at && (
               <button
-                onClick={async () => { await revoke({ data: { id: iv.id } }); refresh(); }}
+                onClick={async () => { if (isPreview) return; await revoke({ data: { id: iv.id } }); refresh(); }}
                 className="text-xs text-destructive underline"
               >Revoke</button>
             )}
