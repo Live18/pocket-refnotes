@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { getMe } from "@/lib/auth.functions";
+import { getPreviewRole, setPreviewRole, previewMe, type PreviewRole } from "@/lib/preview-mode";
 
 export interface MeData {
   userId: string;
@@ -16,6 +17,9 @@ interface AuthCtx {
   session: Session | null;
   user: User | null;
   me: MeData | null;
+  isAuthenticated: boolean;
+  previewRole: PreviewRole | null;
+  previewAs: (role: PreviewRole) => void;
   refresh: () => Promise<void>;
   signOut: () => Promise<void>;
 }
@@ -26,8 +30,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [me, setMe] = useState<MeData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [previewRole, setPreviewRoleState] = useState<PreviewRole | null>(null);
 
   const refresh = async () => {
+    if (previewRole) { setMe(previewMe(previewRole) as MeData); return; }
     if (!session) { setMe(null); return; }
     try {
       const data = await getMe();
@@ -38,6 +44,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    // Hydrate preview role from sessionStorage first.
+    const pr = getPreviewRole();
+    if (pr) {
+      setPreviewRoleState(pr);
+      setMe(previewMe(pr) as MeData);
+      setLoading(false);
+      return;
+    }
     // 1. Subscribe FIRST to avoid missed events.
     const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
       setSession(s);
@@ -52,10 +66,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (loading) return;
+    if (previewRole) { setMe(previewMe(previewRole) as MeData); return; }
     if (session) refresh().finally(() => {});
     else setMe(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.access_token, loading]);
+  }, [session?.access_token, loading, previewRole]);
+
+  const previewAs = (role: PreviewRole) => {
+    setPreviewRole(role);
+    setPreviewRoleState(role);
+    setMe(previewMe(role) as MeData);
+  };
 
   return (
     <Ctx.Provider value={{
@@ -63,8 +84,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       session,
       user: session?.user ?? null,
       me,
+      isAuthenticated: !!session || !!previewRole,
+      previewRole,
+      previewAs,
       refresh,
-      signOut: async () => { await supabase.auth.signOut(); },
+      signOut: async () => {
+        if (previewRole) {
+          setPreviewRole(null);
+          setPreviewRoleState(null);
+          setMe(null);
+          return;
+        }
+        await supabase.auth.signOut();
+      },
     }}>
       {children}
     </Ctx.Provider>
