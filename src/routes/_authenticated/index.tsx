@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { listGames } from "@/lib/games.functions";
 import { useAuth } from "@/lib/auth-context";
+import { isPreviewUserId, previewMocks } from "@/lib/preview-mode";
 
 export const Route = createFileRoute("/_authenticated/")({
   component: HomePage,
@@ -11,7 +12,11 @@ export const Route = createFileRoute("/_authenticated/")({
 function HomePage() {
   const { me, signOut } = useAuth();
   const list = useServerFn(listGames);
-  const { data, isLoading } = useQuery({ queryKey: ["games"], queryFn: () => list() });
+  const isPreview = isPreviewUserId(me?.userId);
+  const { data, isLoading } = useQuery({
+    queryKey: ["games", isPreview],
+    queryFn: isPreview ? async () => ({ games: previewMocks.games }) : () => list(),
+  });
 
   return (
     <div className="px-4 py-6 space-y-4">
