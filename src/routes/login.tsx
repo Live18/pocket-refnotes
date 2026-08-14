@@ -25,6 +25,7 @@ function LoginPage() {
     if (isAuthenticated) router.navigate({ to: redirect ?? "/" });
   }, [isAuthenticated, router, redirect]);
 
+  // TODO: rate-limit login attempts.
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     setBusy(true); setError(null);
