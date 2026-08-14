@@ -17,17 +17,15 @@ async function assertAdmin(
 export const listMembers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const orgId = await assertAdmin(context.supabase, context.userId);
+    await assertAdmin(context.supabase, context.userId);
 
     const { data: profiles, error } = await context.supabase
       .from("profiles")
-      .select("id, display_name, email, created_at")
-      .eq("org_id", orgId);
+      .select("id, display_name, email, role, created_at");
     if (error) throw new Error(error.message);
 
     const ids = (profiles ?? []).map((p) => p.id);
-    const [{ data: roles }, { data: lastEntries }] = await Promise.all([
-      context.supabase.from("user_roles").select("user_id, role").eq("org_id", orgId).in("user_id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"]),
+    const [{ data: lastEntries }] = await Promise.all([
       // Last entry meta only — never the body.
       context.supabase
         .from("entries")
@@ -36,12 +34,6 @@ export const listMembers = createServerFn({ method: "GET" })
         .order("updated_at", { ascending: false }),
     ]);
 
-    const roleMap = new Map<string, string[]>();
-    (roles ?? []).forEach((r: any) => {
-      const arr = roleMap.get(r.user_id) ?? [];
-      arr.push(r.role);
-      roleMap.set(r.user_id, arr);
-    });
     const lastByUser = new Map<string, any>();
     (lastEntries ?? []).forEach((e: any) => {
       if (!lastByUser.has(e.author_id)) lastByUser.set(e.author_id, e);
@@ -50,7 +42,6 @@ export const listMembers = createServerFn({ method: "GET" })
     return {
       members: (profiles ?? []).map((p) => ({
         ...p,
-        roles: roleMap.get(p.id) ?? [],
         lastEntry: lastByUser.get(p.id) ?? null,
       })),
     };
