@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { listMembers, changeRole, removeMember } from "@/lib/admin.functions";
+import { listMembers, changeRole } from "@/lib/admin.functions";
 import { useAuth } from "@/lib/auth-context";
 import { isPreviewUserId, previewMocks } from "@/lib/preview-mode";
 
@@ -14,7 +14,6 @@ function MembersPage() {
   const isPreview = isPreviewUserId(me?.userId);
   const list = useServerFn(listMembers);
   const change = useServerFn(changeRole);
-  const remove = useServerFn(removeMember);
   const qc = useQueryClient();
   const { data, isLoading } = useQuery({
     queryKey: ["admin-members", isPreview],
@@ -35,21 +34,17 @@ function MembersPage() {
             <div>
               <p className="font-medium">{m.display_name ?? m.email ?? m.id}</p>
               <p className="text-xs text-muted-foreground">{m.email}</p>
-              <p className="mt-1 text-xs">Role: <strong>{m.roles.join(", ") || "—"}</strong></p>
+              <p className="mt-1 text-xs">Role: <strong>{m.role || "—"}</strong></p>
             </div>
             <div className="flex gap-2">
               <select
                 className="rounded border border-input bg-background px-2 py-1 text-xs"
-                value={m.roles[0] ?? "member"}
+                value={m.role ?? "user"}
                 onChange={async (e) => { if (isPreview) return; await change({ data: { userId: m.id, role: e.target.value as any } }); refresh(); }}
               >
-                <option value="member">member</option>
-                <option value="admin">admin</option>
+                <option value="user">User</option>
+                <option value="admin">Admin</option>
               </select>
-              <button
-                onClick={async () => { if (confirm("Remove member?")) { if (isPreview) return; await remove({ data: { userId: m.id } }); refresh(); } }}
-                className="rounded border border-destructive/50 px-2 py-1 text-xs text-destructive hover:bg-destructive/10"
-              >Remove</button>
             </div>
           </div>
           {m.lastEntry && (
