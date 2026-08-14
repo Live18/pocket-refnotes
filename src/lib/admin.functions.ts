@@ -97,15 +97,11 @@ export const changeRole = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({
     userId: z.string().uuid(),
-    role: z.enum(["admin", "member"]),
+    role: z.enum(["admin", "user"]),
   }).parse(input))
   .handler(async ({ data, context }) => {
-    const orgId = await assertAdmin(context.supabase, context.userId);
-    // Replace any existing role with the new one
-    await context.supabase.from("user_roles").delete().eq("user_id", data.userId).eq("org_id", orgId);
-    const { error } = await context.supabase.from("user_roles").insert({
-      user_id: data.userId, org_id: orgId, role: data.role,
-    });
+    await assertAdmin(context.supabase, context.userId);
+    const { error } = await context.supabase.from("profiles").update({ role: data.role }).eq("id", data.userId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
