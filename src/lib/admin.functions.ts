@@ -50,11 +50,10 @@ export const listMembers = createServerFn({ method: "GET" })
 export const listInvites = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const orgId = await assertAdmin(context.supabase, context.userId);
+    await assertAdmin(context.supabase, context.userId);
     const { data, error } = await context.supabase
       .from("invites")
       .select("id, email, role, expires_at, accepted_at, created_at")
-      .eq("org_id", orgId)
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     return { invites: data ?? [] };
