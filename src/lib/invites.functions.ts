@@ -50,7 +50,7 @@ export const getInviteByToken = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     const { data: invite } = await supabaseAdmin
       .from("invites")
-      .select("email, role, expires_at, accepted_at, org:orgs(name)")
+      .select("email, role, expires_at, accepted_at")
       .eq("token", data.token)
       .maybeSingle();
     return { invite: invite ?? null };
