@@ -27,24 +27,18 @@ export const acceptInvite = createServerFn({ method: "POST" })
       throw new Error("Invite email does not match signed-in user");
     }
 
-    // Bind profile to org and assign role.
+    // Update profile with email and role.
     await supabaseAdmin
       .from("profiles")
-      .update({ org_id: invite.org_id, email: userEmail })
+      .update({ email: userEmail, role: invite.role })
       .eq("id", userId);
-
-    await supabaseAdmin
-      .from("user_roles")
-      .upsert({ user_id: userId, org_id: invite.org_id, role: invite.role }, {
-        onConflict: "user_id,org_id,role",
-      });
 
     await supabaseAdmin
       .from("invites")
       .update({ accepted_at: new Date().toISOString() })
       .eq("id", invite.id);
 
-    return { orgId: invite.org_id, role: invite.role };
+    return { role: invite.role };
   });
 
 /**
