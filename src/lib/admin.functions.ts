@@ -6,19 +6,12 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 async function assertAdmin(
   supabase: any,
   userId: string,
-): Promise<string> {
+): Promise<void> {
   const { data: profile } = await supabase
-    .from("profiles").select("org_id").eq("id", userId).maybeSingle();
-  if (!profile?.org_id) throw new Error("No organization assigned");
-  const { data: role } = await supabase
-    .from("user_roles")
-    .select("role")
-    .eq("user_id", userId)
-    .eq("org_id", profile.org_id)
-    .eq("role", "admin")
-    .maybeSingle();
-  if (!role) throw new Error("Forbidden: admin role required");
-  return profile.org_id as string;
+    .from("profiles").select("role").eq("id", userId).maybeSingle();
+  if (profile?.role !== "admin" && profile?.role !== "super_admin") {
+    throw new Error("Forbidden: admin role required");
+  }
 }
 
 export const listMembers = createServerFn({ method: "GET" })
