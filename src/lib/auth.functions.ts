@@ -6,9 +6,7 @@ export const getMe = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { supabase, userId, userEmail } = context;
 
-    const [{ data: profile }] = await Promise.all([
-      supabase.from("profiles").select("*").eq("id", userId).maybeSingle(),
-    ]);
+    const { data: profile } = await supabase.from("profiles").select("*").eq("id", userId).maybeSingle();
 
     return {
       userId,
