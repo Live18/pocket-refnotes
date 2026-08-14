@@ -6,17 +6,16 @@ export const getMe = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { supabase, userId, userEmail } = context;
 
-    const [{ data: profile }, { data: roles }] = await Promise.all([
+    const [{ data: profile }] = await Promise.all([
       supabase.from("profiles").select("*").eq("id", userId).maybeSingle(),
-      supabase.from("user_roles").select("role, org_id").eq("user_id", userId),
     ]);
 
     return {
       userId,
       email: userEmail,
       profile: profile ?? null,
-      roles: (roles ?? []).map((r) => ({ role: r.role as "admin" | "member", orgId: r.org_id as string })),
-      isAdmin: (roles ?? []).some((r) => r.role === "admin"),
+      role: (profile?.role as "admin" | "super_admin" | "user") ?? "user",
+      isAdmin: (profile?.role === "admin" || profile?.role === "super_admin"),
     };
   });
 
