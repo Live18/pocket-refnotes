@@ -105,14 +105,3 @@ export const changeRole = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
-
-export const removeMember = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((input) => z.object({ userId: z.string().uuid() }).parse(input))
-  .handler(async ({ data, context }) => {
-    const orgId = await assertAdmin(context.supabase, context.userId);
-    // Use admin client because removing roles + clearing org requires service role
-    await supabaseAdmin.from("user_roles").delete().eq("user_id", data.userId).eq("org_id", orgId);
-    await supabaseAdmin.from("profiles").update({ org_id: null }).eq("id", data.userId);
-    return { ok: true };
-  });
