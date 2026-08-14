@@ -9,7 +9,7 @@ export type PreviewRole = "user" | "admin" | "super_admin";
 export function getPreviewRole(): PreviewRole | null {
   if (typeof window === "undefined") return null;
   const v = window.sessionStorage.getItem(KEY);
-  return v === "admin" || v === "member" || v === "super_admin" ? v : null;
+  return v === "admin" || v === "user" || v === "super_admin" ? v : null;
 }
 
 export function setPreviewRole(role: PreviewRole | null) {
@@ -29,7 +29,7 @@ export function previewMe(role: PreviewRole) {
     email: `${userId}@local`,
     profile: {
       id: userId,
-      display_name: role === "admin" ? "Preview Admin" : role === "super_admin" ? "Preview Super Admin" : "Preview Member",
+      display_name: role === "admin" ? "Preview Admin" : role === "super_admin" ? "Preview Super Admin" : "Preview User",
       email: `${userId}@local`,
       onboarding_completed_at: new Date().toISOString(),
     },
@@ -61,7 +61,7 @@ export const previewMocks = {
   }),
   members: [
     { id: "preview-admin", email: "preview-admin@local", display_name: "Preview Admin", role: "admin", lastEntry: null },
-    { id: "preview-member", email: "preview-member@local", display_name: "Preview Member", role: "user", lastEntry: { game: { title: "Lakers @ Celtics" }, status: "saved_sent", sent_at: new Date().toISOString() } },
+    { id: "preview-member", email: "preview-member@local", display_name: "Preview User", role: "user", lastEntry: { game: { title: "Lakers @ Celtics" }, status: "saved_sent", sent_at: new Date().toISOString() } },
     { id: "preview-member-2", email: "rookie@local", display_name: "Rookie Ref", role: "user", lastEntry: null },
   ],
   invites: [
