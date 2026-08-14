@@ -74,15 +74,19 @@ function LoginPage() {
         <div className="mt-4 w-full max-w-sm space-y-2 rounded-xl border border-dashed border-border bg-muted/30 p-4">
           <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Dev preview</p>
           <p className="text-xs text-muted-foreground">No real auth, no data is saved. Lets you click through the post-login screens.</p>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-3 gap-2">
             <button
-              onClick={() => { previewAs("member"); router.navigate({ to: "/" }); }}
+              onClick={() => { previewAs("user"); router.navigate({ to: "/" }); }}
               className="rounded-md border border-border bg-background px-3 py-2 text-xs hover:scale-105 active:scale-95 transition"
-            >Preview as Member</button>
+            >Preview as User</button>
             <button
               onClick={() => { previewAs("admin"); router.navigate({ to: "/" }); }}
               className="rounded-md border border-border bg-background px-3 py-2 text-xs hover:scale-105 active:scale-95 transition"
             >Preview as Admin</button>
+            <button
+              onClick={() => { previewAs("super_admin"); router.navigate({ to: "/" }); }}
+              className="rounded-md border border-border bg-background px-3 py-2 text-xs hover:scale-105 active:scale-95 transition"
+            >Preview as Super Admin</button>
           </div>
         </div>
       )}
