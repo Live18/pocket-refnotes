@@ -7,8 +7,8 @@ import { getPreviewRole, setPreviewRole, previewMe, type PreviewRole } from "@/l
 export interface MeData {
   userId: string;
   email: string | null;
-  profile: { id: string; org_id: string | null; display_name: string | null; email: string | null; onboarding_completed_at: string | null } | null;
-  roles: { role: "admin" | "member"; orgId: string }[];
+  profile: { id: string; display_name: string | null; email: string | null; onboarding_completed_at: string | null } | null;
+  role: "user" | "admin" | "super_admin";
   isAdmin: boolean;
 }
 
