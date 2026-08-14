@@ -4,12 +4,12 @@
 
 const KEY = "lovable.previewAs";
 
-export type PreviewRole = "member" | "admin";
+export type PreviewRole = "user" | "admin" | "super_admin";
 
 export function getPreviewRole(): PreviewRole | null {
   if (typeof window === "undefined") return null;
   const v = window.sessionStorage.getItem(KEY);
-  return v === "admin" || v === "member" ? v : null;
+  return v === "admin" || v === "member" || v === "super_admin" ? v : null;
 }
 
 export function setPreviewRole(role: PreviewRole | null) {
@@ -29,13 +29,12 @@ export function previewMe(role: PreviewRole) {
     email: `${userId}@local`,
     profile: {
       id: userId,
-      org_id: "preview-org",
-      display_name: role === "admin" ? "Preview Admin" : "Preview Member",
+      display_name: role === "admin" ? "Preview Admin" : role === "super_admin" ? "Preview Super Admin" : "Preview Member",
       email: `${userId}@local`,
       onboarding_completed_at: new Date().toISOString(),
     },
-    roles: [{ role, orgId: "preview-org" }],
-    isAdmin: role === "admin",
+    role: role,
+    isAdmin: role === "admin" || role === "super_admin",
   };
 }
 
@@ -61,11 +60,11 @@ export const previewMocks = {
     sent_at: null as string | null,
   }),
   members: [
-    { id: "preview-admin", email: "preview-admin@local", display_name: "Preview Admin", roles: ["admin"], lastEntry: null },
-    { id: "preview-member", email: "preview-member@local", display_name: "Preview Member", roles: ["member"], lastEntry: { game: { title: "Lakers @ Celtics" }, status: "saved_sent", sent_at: new Date().toISOString() } },
-    { id: "preview-member-2", email: "rookie@local", display_name: "Rookie Ref", roles: ["member"], lastEntry: null },
+    { id: "preview-admin", email: "preview-admin@local", display_name: "Preview Admin", role: "admin", lastEntry: null },
+    { id: "preview-member", email: "preview-member@local", display_name: "Preview Member", role: "user", lastEntry: { game: { title: "Lakers @ Celtics" }, status: "saved_sent", sent_at: new Date().toISOString() } },
+    { id: "preview-member-2", email: "rookie@local", display_name: "Rookie Ref", role: "user", lastEntry: null },
   ],
   invites: [
-    { id: "preview-invite-1", email: "pending@example.com", role: "member", accepted_at: null, expires_at: new Date(Date.now() + 7 * 86400000).toISOString() },
+    { id: "preview-invite-1", email: "pending@example.com", role: "user", accepted_at: null, expires_at: new Date(Date.now() + 7 * 86400000).toISOString() },
   ],
 };
