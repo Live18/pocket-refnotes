@@ -63,15 +63,14 @@ export const inviteMember = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({
     email: z.string().email(),
-    role: z.enum(["admin", "member"]).default("member"),
+    role: z.enum(["admin", "user"]).default("user"),
   }).parse(input))
   .handler(async ({ data, context }) => {
-    const orgId = await assertAdmin(context.supabase, context.userId);
+    await assertAdmin(context.supabase, context.userId);
     const token = crypto.randomUUID() + "-" + crypto.randomUUID();
     const { data: invite, error } = await context.supabase
       .from("invites")
       .insert({
-        org_id: orgId,
         email: data.email,
         role: data.role,
         token,
