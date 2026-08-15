@@ -9,8 +9,6 @@ import { withSupabase } from "@supabase/server";
 // Import Resend client
 import Resend from "npm:resend@2.0.0";
 
-console.log("Hello from Functions!");
-
 // This endpoint uses 'publishable' | 'secret' access, apiKey is required.
 // Use publishable for Client-facing, key-validated endpoints
 // Use secret for Server-to-server, internal calls
@@ -42,7 +40,6 @@ export default {
         subject: "Reset your RefNotes password",
         html: `
           <div>
-            <p>Click the button below to reset your password:</p>
             <a href="${resetLinkData.link}" style="display: inline-block; padding: 10px 20px; background-color: #3b82f6; color: white; text-decoration: none; border-radius: 4px;">Reset Password</a>
           </div>
         `,
@@ -55,7 +52,7 @@ export default {
     } catch (error) {
       console.error("Error sending password reset email:", error);
       return new Response(
-        JSON.stringify({ error: "Failed to send password reset email" }),
+        JSON.stringify({ error: error.message }),
         { status: 500, headers: { "Content-Type": "application/json" } }
       );
     }
