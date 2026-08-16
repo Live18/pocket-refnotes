@@ -8,6 +8,9 @@ import { BottomTabBar } from "@/components/BottomTabBar";
 import { RouteTransition } from "@/components/RouteTransition";
 import { DevPanel } from "@/components/DevPanel";
 import appCss from "../styles.css?url";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+const queryClient = new QueryClient();
 
 function NotFoundComponent() {
   return (
@@ -64,24 +67,26 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <AdminProvider>
-          <PermissionsProvider>
-            <JournalProvider>
-              <div className="mx-auto flex min-h-screen max-w-md flex-col bg-background">
-                <main className="flex-1 pb-2">
-                  <RouteTransition>
-                    <Outlet />
-                  </RouteTransition>
-                </main>
-                <BottomTabBar />
-                <DevPanel />
-              </div>
-            </JournalProvider>
-          </PermissionsProvider>
-        </AdminProvider>
-      </AuthProvider>
-    </ThemeProvider>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
+        <AuthProvider>
+          <AdminProvider>
+            <PermissionsProvider>
+              <JournalProvider>
+                <div className="mx-auto flex min-h-screen max-w-md flex-col bg-background">
+                  <main className="flex-1 pb-2">
+                    <RouteTransition>
+                      <Outlet />
+                    </RouteTransition>
+                  </main>
+                  <BottomTabBar />
+                  <DevPanel />
+                </div>
+              </JournalProvider>
+            </PermissionsProvider>
+          </AdminProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
   );
 }
