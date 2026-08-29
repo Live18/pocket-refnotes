@@ -5,7 +5,7 @@
 import "@supabase/functions-js/edge-runtime.d.ts";
 import { withSupabase } from "@supabase/server";
 // Import Resend client
-import Resend from "npm:resend@2.0.0";
+import { Resend } from "npm:resend@2.0.0";
 
 // This endpoint uses 'publishable' | 'secret' access, apiKey is required.
 // Use publishable for Client-facing, key-validated endpoints
