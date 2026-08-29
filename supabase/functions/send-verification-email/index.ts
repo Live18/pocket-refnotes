@@ -69,4 +69,4 @@ export default {
   curl -i --location --request POST 'http://127.0.0.1:54321/functions/v1/send-verification-email' \
     --header 'apiKey: sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH' \
     --data '{"email":"user@example.com"}'
-*/```
+*/
