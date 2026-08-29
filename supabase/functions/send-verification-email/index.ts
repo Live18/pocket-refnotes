@@ -28,6 +28,7 @@ export default {
       });
 
       console.error("generateLink error:", verifyLinkError);
+      console.log("generateLink data:", JSON.stringify(verifyLinkData));
 
       if (!verifyLinkData?.link) {
         return new Response(
