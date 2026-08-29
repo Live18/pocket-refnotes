@@ -5,7 +5,7 @@
 import "@supabase/functions-js/edge-runtime.d.ts";
 import { withSupabase } from "@supabase/server";
 // Import Resend client
-import Resend from "npm:resend@2.0.0";
+// import Resend from "npm:resend@2.0.0";
 
 // This endpoint uses 'publishable' | 'secret' access, apiKey is required.
 // Use publishable for Client-facing, key-validated endpoints
@@ -35,22 +35,22 @@ export default {
       }
 
       // Initialize Resend client
-      const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+      // const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
       // Send email
-      const emailResponse = await resend.emails.send({
-        from: "noreply@refnotes.app",
-        to: [email],
-        subject: "Verify your RefNotes email",
-        html: `
-          <div>
-            <a href="${verifyLinkData.link}" style="display: inline-block; padding: 10px 20px; background-color: #3b82f6; color: white; text-decoration: none; border-radius: 4px;">Verify Email</a>
-          </div>
-        `,
-      });
+      // const emailResponse = await resend.emails.send({
+      //   from: "noreply@refnotes.app",
+      //   to: [email],
+      //   subject: "Verify your RefNotes email",
+      //   html: `
+      //     <div>
+      //       <a href="${verifyLinkData.link}" style="display: inline-block; padding: 10px 20px; background-color: #3b82f6; color: white; text-decoration: none; border-radius: 4px;">Verify Email</a>
+      //     </div>
+      //   `,
+      // });
 
       return new Response(
-        JSON.stringify(emailResponse),
+        JSON.stringify(verifyLinkData),
         { status: 200, headers: { "Content-Type": "application/json" } }
       );
     } catch (error) {
@@ -69,4 +69,4 @@ export default {
   curl -i --location --request POST 'http://127.0.0.1:54321/functions/v1/send-verification-email' \
     --header 'apiKey: sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH' \
     --data '{"email":"user@example.com"}'
-*/
+*/```
