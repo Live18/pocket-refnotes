@@ -30,7 +30,7 @@ export default {
       console.error("generateLink error:", verifyLinkError);
       console.log("generateLink data:", JSON.stringify(verifyLinkData));
 
-      if (!verifyLinkData?.link) {
+      if (!verifyLinkData?.properties?.action_link) {
         return new Response(
           JSON.stringify({ error: "Failed to generate verification link" }),
           { status: 500, headers: { "Content-Type": "application/json" } }
@@ -47,7 +47,7 @@ export default {
       //   subject: "Verify your RefNotes email",
       //   html: `
       //     <div>
-      //       <a href="${verifyLinkData.link}" style="display: inline-block; padding: 10px 20px; background-color: #3b82f6; color: white; text-decoration: none; border-radius: 4px;">Verify Email</a>
+      //       <a href="${verifyLinkData?.properties?.action_link}" style="display: inline-block; padding: 10px 20px; background-color: #3b82f6; color: white; text-decoration: none; border-radius: 4px;">Verify Email</a>
       //     </div>
       //   `,
       // });
