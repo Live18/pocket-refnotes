@@ -7,7 +7,7 @@ import "@supabase/functions-js/edge-runtime.d.ts";
 import { withSupabase } from "@supabase/server";
 
 // Import Resend client
-import Resend from "npm:resend@2.0.0";
+import { Resend } from "npm:resend@2.0.0";
 
 // This endpoint uses 'publishable' | 'secret' access, apiKey is required.
 // Use publishable for Client-facing, key-validated endpoints
@@ -23,7 +23,7 @@ export default {
         email,
       });
 
-      if (!resetLinkData?.link) {
+      if (!resetLinkData?.properties?.action_link) {
         return new Response(
           JSON.stringify({ error: "Failed to generate reset link" }),
           { status: 500, headers: { "Content-Type": "application/json" } }
@@ -40,7 +40,7 @@ export default {
         subject: "Reset your RefNotes password",
         html: `
           <div>
-            <a href="${resetLinkData.link}" style="display: inline-block; padding: 10px 20px; background-color: #3b82f6; color: white; text-decoration: none; border-radius: 4px;">Reset Password</a>
+            <a href="${resetLinkData?.properties?.action_link}" style="display: inline-block; padding: 10px 20px; background-color: #3b82f6; color: white; text-decoration: none; border-radius: 4px;">Reset Password</a>
           </div>
         `,
       });
