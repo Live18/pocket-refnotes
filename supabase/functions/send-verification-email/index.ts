@@ -22,10 +22,12 @@ export default {
       // work for existing users and, when clicked, confirms the email as a side
       // effect of completing the login. Confirm this behaves as expected via a
       // direct curl test before wiring this into the signup flow.
-      const { data: verifyLinkData } = await ctx.supabaseAdmin.auth.admin.generateLink({
+      const { data: verifyLinkData, error: verifyLinkError } = await ctx.supabaseAdmin.auth.admin.generateLink({
         type: "magiclink",
         email,
       });
+
+      console.error("generateLink error:", verifyLinkError);
 
       if (!verifyLinkData?.link) {
         return new Response(
