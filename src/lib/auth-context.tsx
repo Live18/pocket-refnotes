@@ -37,6 +37,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!session) { setMe(null); return; }
     try {
       const data = await getMe();
+      console.log("getMe result:", data);    	
       setMe(data as MeData);
     } catch {
       setMe(null);

@@ -6,7 +6,8 @@ export const getMe = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { supabase, userId, userEmail } = context;
 
-    const { data: profile } = await supabase.from("profiles").select("*").eq("id", userId).maybeSingle();
+    const { data: profile, error } = await supabase.from("profiles").select("*").eq("id", userId).maybeSingle();
+    if (error) throw new Error(`Failed to load profile: ${error.message}`);
 
     return {
       userId,

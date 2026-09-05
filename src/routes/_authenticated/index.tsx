@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { listGames } from "@/lib/games.functions";
 import { useAuth } from "@/lib/auth-context";
 import { isPreviewUserId, previewMocks } from "@/lib/preview-mode";
+import { getCapacities } from "@/lib/permissions";
 
 export const Route = createFileRoute("/_authenticated/")({
   component: HomePage,
@@ -26,8 +27,8 @@ function HomePage() {
           <p className="text-xs text-muted-foreground">Welcome, {me?.email}</p>
         </div>
         <div className="flex gap-2">
-          {me?.isAdmin && (
-            <Link to="/admin" className="rounded-md border border-border px-3 py-1.5 text-xs">Admin</Link>
+          {getCapacities(me).includes("admin") && (
+  	    <Link to="/admin" className="rounded-md border border-border px-3 py-1.5 text-xs">Admin</Link>
           )}
           <button onClick={signOut} className="rounded-md border border-border px-3 py-1.5 text-xs">Sign out</button>
         </div>

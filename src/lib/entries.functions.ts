@@ -14,11 +14,7 @@ async function upsertEntry(
     recipientEmail?: string | null;
   },
 ) {
-  const { data: profile } = await supabase
-    .from("profiles").select("org_id").eq("id", args.userId).maybeSingle();
-  if (!profile?.org_id) throw new Error("No organization assigned");
-
-  const { data: existing } = await supabase
+    const { data: existing } = await supabase
     .from("entries").select("id").eq("game_id", args.gameId).eq("author_id", args.userId).maybeSingle();
 
   const now = new Date().toISOString();
@@ -40,7 +36,6 @@ async function upsertEntry(
     .from("entries").insert({
       game_id: args.gameId,
       author_id: args.userId,
-      org_id: profile.org_id,
       ...patch,
     }).select().single();
   if (error) throw new Error(error.message);

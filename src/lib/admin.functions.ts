@@ -14,6 +14,17 @@ async function assertAdmin(
   }
 }
 
+async function assertSuperAdmin(
+  supabase: any,
+  userId: string,
+): Promise<void> {
+  const { data: profile } = await supabase
+    .from("profiles").select("role").eq("id", userId).maybeSingle();
+  if (profile?.role !== "super_admin") {
+    throw new Error("Forbidden: super_admin role required");
+  }
+}
+
 export const listMembers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -67,6 +78,9 @@ export const inviteMember = createServerFn({ method: "POST" })
   }).parse(input))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
+    if (data.role === "admin") {
+      await assertSuperAdmin(context.supabase, context.userId);
+    }
     const token = crypto.randomUUID() + "-" + crypto.randomUUID();
     const { data: invite, error } = await context.supabase
       .from("invites")
@@ -88,8 +102,24 @@ export const revokeInvite = createServerFn({ method: "POST" })
   .inputValidator((input) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
-    const { error } = await context.supabase.from("invites").delete().eq("id", data.id);
+    const { data: invite, error: fetchError } = await context.supabase
+      .from("invites")
+      .select("role")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (fetchError) throw new Error(fetchError.message);
+    if (!invite) throw new Error("Invite not found.");
+    if (invite.role === "admin") {
+      await assertSuperAdmin(context.supabase, context.userId);
+    }
+    const { data: deleted, error } = await context.supabase
+      .from("invites")
+      .delete()
+      .eq("id", data.id)
+      .select()
+      .maybeSingle();
     if (error) throw new Error(error.message);
+    if (!deleted) throw new Error("Revoke failed: no invite was deleted. Check RLS permissions on the invites table.");
     return { ok: true };
   });
 
@@ -100,8 +130,14 @@ export const changeRole = createServerFn({ method: "POST" })
     role: z.enum(["admin", "user"]),
   }).parse(input))
   .handler(async ({ data, context }) => {
-    await assertAdmin(context.supabase, context.userId);
-    const { error } = await context.supabase.from("profiles").update({ role: data.role }).eq("id", data.userId);
+    await assertSuperAdmin(context.supabase, context.userId);
+    const { data: updated, error } = await context.supabase
+      .from("profiles")
+      .update({ role: data.role })
+      .eq("id", data.userId)
+      .select()
+      .maybeSingle();
     if (error) throw new Error(error.message);
+    if (!updated) throw new Error("Role change failed: no profile was updated. Check that the target user exists.");
     return { ok: true };
   });

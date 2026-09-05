@@ -19,24 +19,49 @@ function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [resendBusy, setResendBusy] = useState(false);
+  const [awaitingVerification, setAwaitingVerification] = useState<string | null>(null);
 
   useEffect(() => {
     if (isAuthenticated) router.navigate({ to: redirect ?? "/" });
   }, [isAuthenticated, router, redirect]);
 
+  // Shared by the post-signup send and the resend button on the "check your inbox" screen.
+  const sendVerificationEmail = async (targetEmail: string) => {
+    const { error: sendError } = await supabase.functions.invoke("send-verification-email", {
+      body: { email: targetEmail },
+    });
+    return sendError;
+  };
+
   // TODO: rate-limit login attempts.
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    setBusy(true); setError(null);
+    setBusy(true); setError(null); setNotice(null);
     try {
-      const { error } = mode === "signin"
-        ? await supabase.auth.signInWithPassword({ email, password })
-        : await supabase.auth.signUp({
-            email, password,
-            options: { emailRedirectTo: window.location.origin },
-          });
-      if (error) throw error;
+      if (mode === "signin") {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) {
+          if (error.message === "Email not confirmed") {
+            setAwaitingVerification(email);
+            return;
+          }
+          throw error;
+        }
+      } else {
+        const { error, data } = await supabase.auth.signUp({
+          email, password,
+          options: { emailRedirectTo: window.location.origin },
+        });
+        if (error) throw error;
+        if (data.user) {
+          const sendError = await sendVerificationEmail(email);
+          setAwaitingVerification(email);
+          if (sendError) setError("We couldn't send the verification email. Try again below.");
+        }
+      }
     } catch (err: any) {
       setError(err.message ?? "Authentication failed");
     } finally {
@@ -44,8 +69,49 @@ function LoginPage() {
     }
   };
 
+  const resendVerification = async () => {
+    if (!awaitingVerification) return;
+    setResendBusy(true); setNotice(null); setError(null);
+    try {
+      const sendError = await sendVerificationEmail(awaitingVerification);
+      if (sendError) setError("Couldn't resend the verification email. Try again.");
+      else setNotice("Sent — check your inbox.");
+    } finally {
+      setResendBusy(false);
+    }
+  };
+
+  const backToSignIn = () => {
+    setAwaitingVerification(null);
+    setError(null);
+    setNotice(null);
+    setMode("signin");
+  };
+
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background px-4 py-8">
+      {awaitingVerification ? (
+        <div className="w-full max-w-sm space-y-4 rounded-xl border border-border bg-card p-6 text-center">
+          <h1 className="text-2xl font-semibold">Check your inbox</h1>
+          <p className="text-sm text-muted-foreground">
+            We sent a verification link to <span className="text-foreground">{awaitingVerification}</span>.
+            Click it to confirm your email, then come back and sign in.
+          </p>
+          {error && <p className="text-sm text-destructive">{error}</p>}
+          {notice && <p className="text-sm text-emerald-600">{notice}</p>}
+          <button
+            type="button"
+            onClick={resendVerification}
+            disabled={resendBusy}
+            className="w-full rounded-md border border-input bg-background px-4 py-2 text-sm hover:scale-105 active:scale-95 transition disabled:opacity-50"
+          >
+            {resendBusy ? "Sending…" : "Resend verification email"}
+          </button>
+          <button type="button" onClick={backToSignIn} className="w-full text-xs text-muted-foreground hover:text-foreground">
+            Back to sign in
+          </button>
+        </div>
+      ) : (
       <form onSubmit={submit} className="w-full max-w-sm space-y-4 rounded-xl border border-border bg-card p-6">
         <h1 className="text-2xl font-semibold">{mode === "signin" ? "Sign in" : "Create account"}</h1>
         <input
@@ -69,6 +135,7 @@ function LoginPage() {
           Have an invite? <Link to="/" className="underline">Open the link from your email</Link>
         </p>
       </form>
+      )}
 
       {import.meta.env.DEV && (
         <div className="mt-4 w-full max-w-sm space-y-2 rounded-xl border border-dashed border-border bg-muted/30 p-4">

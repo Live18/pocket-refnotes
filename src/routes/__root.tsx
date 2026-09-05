@@ -1,17 +1,12 @@
 import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 import { ThemeProvider } from "@/lib/theme";
-import { PermissionsProvider } from "@/lib/permissions";
 import { JournalProvider } from "@/lib/journal";
-import { AdminProvider } from "@/lib/admin";
 import { AuthProvider } from "@/lib/auth-context";
 import { BottomTabBar } from "@/components/BottomTabBar";
 import { RouteTransition } from "@/components/RouteTransition";
-import { DevPanel } from "@/components/DevPanel";
 import appCss from "../styles.css?url";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-
 const queryClient = new QueryClient();
-
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -27,7 +22,6 @@ function NotFoundComponent() {
     </div>
   );
 }
-
 export const Route = createRootRoute({
   head: () => ({
     meta: [
@@ -50,7 +44,6 @@ export const Route = createRootRoute({
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
 });
-
 function RootShell({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className="dark">
@@ -64,27 +57,21 @@ function RootShell({ children }: { children: React.ReactNode }) {
     </html>
   );
 }
-
 function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <AuthProvider>
-          <AdminProvider>
-            <PermissionsProvider>
-              <JournalProvider>
-                <div className="mx-auto flex min-h-screen max-w-md flex-col bg-background">
-                  <main className="flex-1 pb-2">
-                    <RouteTransition>
-                      <Outlet />
-                    </RouteTransition>
-                  </main>
-                  <BottomTabBar />
-                  <DevPanel />
-                </div>
-              </JournalProvider>
-            </PermissionsProvider>
-          </AdminProvider>
+          <JournalProvider>
+            <div className="mx-auto flex min-h-screen max-w-md flex-col bg-background">
+              <main className="flex-1 pb-2">
+                <RouteTransition>
+                  <Outlet />
+                </RouteTransition>
+              </main>
+              <BottomTabBar />
+            </div>
+          </JournalProvider>
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>

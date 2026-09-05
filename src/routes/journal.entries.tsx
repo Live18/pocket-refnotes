@@ -3,7 +3,6 @@ import { useState } from "react";
 import { Trash2, Share2, Tag, Download, Printer, X, CheckSquare, Square } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import { useJournal, timeAgo, type JournalEntry } from "@/lib/journal";
-import { useAdmin } from "@/lib/admin";
 
 export const Route = createFileRoute("/journal/entries")({
   component: EntriesList,
@@ -11,7 +10,6 @@ export const Route = createFileRoute("/journal/entries")({
 
 function EntriesList() {
   const { entries, remove, setShared, addTag } = useJournal();
-  const { admin } = useAdmin();
   const navigate = useNavigate();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [tagPrompt, setTagPrompt] = useState(false);
@@ -89,9 +87,6 @@ function EntriesList() {
         <Link to="/journal" className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground hover:text-foreground">
           ← Back
         </Link>
-        {admin && (
-          <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-foreground">Admin View</span>
-        )}
       </div>
 
       {selectMode && (
@@ -138,7 +133,6 @@ function EntriesList() {
             entry={e}
             selected={selected.has(e.id)}
             selectMode={selectMode}
-            admin={admin}
             onToggle={() => toggle(e.id)}
             onOpen={() => navigate({ to: "/journal/entries/$id", params: { id: e.id } })}
           />
@@ -177,14 +171,12 @@ function EntryRow({
   entry,
   selected,
   selectMode,
-  admin,
   onToggle,
   onOpen,
 }: {
   entry: JournalEntry;
   selected: boolean;
   selectMode: boolean;
-  admin: boolean;
   onToggle: () => void;
   onOpen: () => void;
 }) {
@@ -226,16 +218,6 @@ function EntryRow({
             </span>
           ))}
         </div>
-
-        {admin && (
-          <div className="mt-2 rounded-md border border-dashed border-border bg-background/40 p-2 font-mono text-[10px] text-muted-foreground">
-            <div>id: {entry.id.slice(0, 8)}…</div>
-            <div>created: {new Date(entry.createdAt).toLocaleString()}</div>
-            <div>updated: {new Date(entry.updatedAt).toLocaleString()}</div>
-            {entry.editedAt && <div>edited: {new Date(entry.editedAt).toLocaleString()}</div>}
-            <div>shared: {entry.sharedAt ? new Date(entry.sharedAt).toLocaleString() : "never"}</div>
-          </div>
-        )}
       </div>
     </li>
   );

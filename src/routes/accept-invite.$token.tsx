@@ -16,27 +16,37 @@ function AcceptInvitePage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [awaitingVerification, setAwaitingVerification] = useState(false);
 
   useEffect(() => {
     getInviteByToken({ data: { token } }).then((res) => setInvite(res.invite)).catch(() => setInvite(null));
   }, [token]);
+
+  const sendVerificationEmail = async (targetEmail: string) => {
+    const { error: sendError } = await supabase.functions.invoke("send-verification-email", {
+      body: { email: targetEmail },
+    });
+    return sendError;
+  };
 
   const accept = async (e: FormEvent) => {
     e.preventDefault();
     if (!invite) return;
     setBusy(true); setError(null);
     try {
-      // If not signed in, sign up with the invited email.
       if (!session) {
-        const { error: suErr } = await supabase.auth.signUp({
+        const { error: suErr, data } = await supabase.auth.signUp({
           email: invite.email,
           password,
-          options: { emailRedirectTo: window.location.origin },
+          options: { emailRedirectTo: `${window.location.origin}/accept-invite/${token}` },
         });
         if (suErr) throw suErr;
-        // Auto sign-in (in case email confirmation is disabled)
-        const { error: siErr } = await supabase.auth.signInWithPassword({ email: invite.email, password });
-        if (siErr) throw siErr;
+        if (data.user) {
+          const sendError = await sendVerificationEmail(invite.email);
+          setAwaitingVerification(true);
+          if (sendError) setError("We couldn't send the verification email. Try again below.");
+        }
+        return;
       }
       await acceptInvite({ data: { token } });
       await refresh();
@@ -53,6 +63,21 @@ function AcceptInvitePage() {
   }
   if (invite.accepted_at) {
     return <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">This invite has already been used.</div>;
+  }
+
+  if (awaitingVerification) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background px-4">
+        <div className="w-full max-w-sm space-y-4 rounded-xl border border-border bg-card p-6 text-center">
+          <h1 className="text-xl font-semibold">Check your inbox</h1>
+          <p className="text-sm text-muted-foreground">
+            We sent a verification link to <span className="text-foreground">{invite.email}</span>.
+            Click it, then come back to this page to finish joining.
+          </p>
+          {error && <p className="text-sm text-destructive">{error}</p>}
+        </div>
+      </div>
+    );
   }
 
   return (

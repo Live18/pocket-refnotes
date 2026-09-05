@@ -20,7 +20,10 @@ function AdminLayout() {
   return (
     <div className="px-4 py-6">
       <header className="mb-6">
-        <h1 className="text-2xl font-bold">Admin</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold">Admin</h1>
+          <Link to="/" className="rounded-md border border-border px-3 py-1.5 text-xs">← Journal</Link>
+        </div>
         <nav className="mt-3 flex gap-3 text-sm">
           <Link to="/admin" activeOptions={{ exact: true }} activeProps={{ className: "font-bold underline" }}>Members</Link>
           <Link to="/admin/invites" activeProps={{ className: "font-bold underline" }}>Invites</Link>

@@ -7,7 +7,7 @@ export const listGames = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { data, error } = await context.supabase
       .from("games")
-      .select("id, title, game_date, opponent, location, created_at")
+      .select("id, title, game_date, opponent, location, created_at, crew")
       .order("game_date", { ascending: false, nullsFirst: false })
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
@@ -19,6 +19,7 @@ const createGameSchema = z.object({
   gameDate: z.string().optional().nullable(),
   opponent: z.string().max(200).optional().nullable(),
   location: z.string().max(200).optional().nullable(),
+  crew: z.string().max(500).optional().nullable()
 });
 
 export const createGame = createServerFn({ method: "POST" })
@@ -26,21 +27,15 @@ export const createGame = createServerFn({ method: "POST" })
   .inputValidator((input) => createGameSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-
-    const { data: profile, error: profErr } = await supabase
-      .from("profiles").select("org_id").eq("id", userId).maybeSingle();
-    if (profErr) throw new Error(profErr.message);
-    if (!profile?.org_id) throw new Error("No organization assigned");
-
     const { data: game, error } = await supabase
       .from("games")
       .insert({
-        org_id: profile.org_id,
         created_by: userId,
         title: data.title,
         game_date: data.gameDate ?? null,
         opponent: data.opponent ?? null,
         location: data.location ?? null,
+	crew: data.crew ?? null,
       })
       .select()
       .single();

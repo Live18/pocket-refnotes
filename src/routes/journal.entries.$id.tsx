@@ -3,7 +3,6 @@ import { useState } from "react";
 import { Pencil, Share2, Trash2, Save, X } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import { useJournal, timeAgo } from "@/lib/journal";
-import { useAdmin } from "@/lib/admin";
 
 export const Route = createFileRoute("/journal/entries/$id")({
   component: EntryDetail,
@@ -12,7 +11,6 @@ export const Route = createFileRoute("/journal/entries/$id")({
 function EntryDetail() {
   const { id } = Route.useParams();
   const { get, update, remove, setShared } = useJournal();
-  const { admin } = useAdmin();
   const navigate = useNavigate();
   const entry = get(id);
 
@@ -49,9 +47,6 @@ function EntryDetail() {
         <Link to="/journal/entries" className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground hover:text-foreground">
           ← Archive
         </Link>
-        {admin && (
-          <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-foreground">Admin View</span>
-        )}
       </div>
 
       <div className="flex flex-1 flex-col gap-3 px-5 pb-8">
@@ -109,17 +104,6 @@ function EntryDetail() {
             <p className="whitespace-pre-wrap rounded-xl border border-border bg-card p-4 text-sm leading-relaxed">
               {entry.body}
             </p>
-
-            {admin && (
-              <div className="rounded-xl border border-dashed border-border bg-background/40 p-3 font-mono text-[10px] text-muted-foreground">
-                <p className="mb-1 uppercase tracking-widest text-foreground">Admin · Change Log</p>
-                <div>id: {entry.id}</div>
-                <div>created: {new Date(entry.createdAt).toLocaleString()}</div>
-                <div>updated: {new Date(entry.updatedAt).toLocaleString()}</div>
-                <div>last edit: {entry.editedAt ? new Date(entry.editedAt).toLocaleString() : "—"}</div>
-                <div>shared: {entry.sharedAt ? new Date(entry.sharedAt).toLocaleString() : "never"}</div>
-              </div>
-            )}
 
             <div className="grid grid-cols-3 gap-2">
               <button
