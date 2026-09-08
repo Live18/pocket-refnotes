@@ -7,7 +7,7 @@ import { getPreviewRole, setPreviewRole, previewMe, type PreviewRole } from "@/l
 export interface MeData {
   userId: string;
   email: string | null;
-  profile: { id: string; display_name: string | null; email: string | null; onboarding_completed_at: string | null } | null;
+  profile: { id: string; display_name: string | null; email: string | null; default_recipient_email: string | null; onboarding_completed_at: string | null } | null; // <-- CHANGE: added default_recipient_email
   role: "user" | "admin" | "super_admin";
   isAdmin: boolean;
 }
@@ -31,6 +31,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [me, setMe] = useState<MeData | null>(null);
   const [loading, setLoading] = useState(true);
   const [previewRole, setPreviewRoleState] = useState<PreviewRole | null>(null);
+  const [sessionChecked, setSessionChecked] = useState(false);
 
   const refresh = async () => {
     if (previewRole) { setMe(previewMe(previewRole) as MeData); return; }
@@ -60,18 +61,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // 2. Then fetch existing session.
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
-      setLoading(false);
+      setSessionChecked(true);
     });
     return () => sub.subscription.unsubscribe();
   }, []);
 
   useEffect(() => {
-    if (loading) return;
+    if (!sessionChecked) return;
     if (previewRole) { setMe(previewMe(previewRole) as MeData); return; }
-    if (session) refresh().finally(() => {});
-    else setMe(null);
+    if (session) {
+      refresh().finally(() => setLoading(false));
+    } else {
+      setMe(null);
+      setLoading(false);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.access_token, loading, previewRole]);
+  }, [session?.access_token, loading, previewRole, sessionChecked]);
 
   const previewAs = (role: PreviewRole) => {
     setPreviewRole(role);

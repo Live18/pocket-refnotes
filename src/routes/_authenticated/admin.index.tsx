@@ -82,19 +82,23 @@ function MembersPage() {
             </div>
             <div className="flex gap-2">
               {m.role === "super_admin" ? (
-                <span className="rounded border border-input bg-muted px-2 py-1 text-xs text-muted-foreground">
-                  Super Admin
-                </span>
-              ) : (
-                <select
-                  className="rounded border border-input bg-background px-2 py-1 text-xs"
-                  value={m.role ?? "user"}
-                  onChange={(e) => requestRoleChange(m, e.target.value as "user" | "admin")}
-                >
-                  <option value="user">User</option>
-                  <option value="admin">Admin</option>
-                </select>
-              )}
+  	       <span className="rounded border border-input bg-muted px-2 py-1 text-xs text-muted-foreground">
+    		 Super Admin
+  	       </span>
+	      ) : m.id === me.userId ? (
+  		<span className="rounded border border-input bg-muted px-2 py-1 text-xs text-muted-foreground">
+    		  Your account
+  		</span>
+	      ) : (
+  		<select
+    		  className="rounded border border-input bg-background px-2 py-1 text-xs"
+    		  value={m.role ?? "user"}
+    		  onChange={(e) => requestRoleChange(m, e.target.value as "user" | "admin")}
+  		>
+    		  <option value="user">User</option>
+    		  <option value="admin">Admin</option>
+  		</select>
+	      )}
             </div>
           </div>
           {m.lastEntry && (

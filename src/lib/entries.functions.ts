@@ -57,6 +57,21 @@ export const getEntryForGame = createServerFn({ method: "GET" })
     return { entry: entry ?? null };
   });
 
+export const getEntryById = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { id: string }) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: entry, error } = await supabase
+      .from("entries")
+      .select("id, status, recipient_email, body, saved_at, sent_at, updated_at, game:games(id, title, game_date)")
+      .eq("id", data.id)
+      .eq("author_id", userId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return { entry: entry ?? null };
+  });
+
 export const saveDraft = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({

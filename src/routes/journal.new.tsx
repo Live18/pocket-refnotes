@@ -1,11 +1,12 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react"; // <-- CHANGE: added useEffect (state-sync fix)
 import { Mic, Save, Send, Pencil, Trash2, Check, ArrowLeft } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import type { GameMeta } from "@/lib/journal";
 import { useServerFn } from "@tanstack/react-start";
 import { createGame } from "@/lib/games.functions";
 import { savePrivate, saveAndSend } from "@/lib/entries.functions";
+import { useAuth } from "@/lib/auth-context"; // <-- ADDITION: need me.profile.default_recipient_email
 
 export const Route = createFileRoute("/journal/new")({
   component: NewJournal,
@@ -34,6 +35,7 @@ const EMPTY: GameMeta = { gameDateTime: "", venue: "", homeTeam: "", visitingTea
 type Stage = "fields" | "review" | "notes";
 
 function NewJournal() {
+  const { me } = useAuth(); // <-- ADDITION
   const createGameFn = useServerFn(createGame);
   const savePrivateFn = useServerFn(savePrivate);
   const saveAndSendFn = useServerFn(saveAndSend);
@@ -49,6 +51,31 @@ function NewJournal() {
   const [body, setBody] = useState("");
   const [shareOpen, setShareOpen] = useState(false);
   const [recipients, setRecipients] = useState("");
+
+  const defaultRecipientEmail = me?.profile?.default_recipient_email ?? null; // <-- ADDITION
+  // <-- ADDITION: pre-checked when a default exists (per Bill's decision, Sep 8); unchecked
+  // and disabled otherwise.
+  const [useDefaultRecipient, setUseDefaultRecipient] = useState(!!defaultRecipientEmail);
+  // <-- ADDITION: tracks whether the referee has manually toggled the checkbox this
+  // session, so an unrelated defaultRecipientEmail change (e.g. context refresh after
+  // visiting Settings elsewhere) doesn't silently override a deliberate manual choice.
+  const userTouchedDefaultCheckboxRef = useRef(false);
+
+  // <-- ADDITION: keeps the checkbox in sync with defaultRecipientEmail if it changes
+  // after this component mounted — but only while the referee hasn't manually touched
+  // it themselves this session (see ref above).
+  useEffect(() => {
+    if (!userTouchedDefaultCheckboxRef.current) {
+      setUseDefaultRecipient(!!defaultRecipientEmail);
+    }
+  }, [defaultRecipientEmail]);
+
+  // <-- ADDITION: wraps the raw setter so manual checkbox interaction is flagged before
+  // updating state — passed to NotesStep instead of setUseDefaultRecipient directly.
+  const handleUseDefaultRecipientChange = (checked: boolean) => {
+    userTouchedDefaultCheckboxRef.current = true;
+    setUseDefaultRecipient(checked);
+  };
 
   const field = FIELDS[stepIdx];
   const fieldValue = meta[field?.key];
@@ -93,8 +120,14 @@ function NewJournal() {
 
     const save = async (share: boolean) => {
     setError(null);
+    // <-- CHANGE: when the default-recipient checkbox is checked and a default exists,
+    // use that instead of parsing the manual `recipients` field. Falls back to the
+    // original manual-entry parsing otherwise — unchanged behavior for anyone without
+    // a default set, or who unchecked the box.
     const recipientEmail = share
-      ? recipients.split(",").map((r) => r.trim()).filter(Boolean)[0]
+      ? (useDefaultRecipient && defaultRecipientEmail
+          ? defaultRecipientEmail
+          : recipients.split(",").map((r) => r.trim()).filter(Boolean)[0])
       : undefined;
     if (share && !recipientEmail) {
       setError("Enter an email address to share this report.");
@@ -179,6 +212,9 @@ function NewJournal() {
           onSaveShare={() => save(true)}
 	  error={error}
           saving={saving}
+          defaultRecipientEmail={defaultRecipientEmail} // <-- ADDITION
+          useDefaultRecipient={useDefaultRecipient} // <-- ADDITION
+          setUseDefaultRecipient={handleUseDefaultRecipientChange} // <-- ADDITION (wrapped setter, not the raw one)
         />
       )}
     </div>
@@ -299,6 +335,7 @@ function NotesStep({
   title, meta, body, setBody,
   shareOpen, setShareOpen, recipients, setRecipients,
   onSave, onSaveShare, error, saving,
+  defaultRecipientEmail, useDefaultRecipient, setUseDefaultRecipient, // <-- ADDITION
 }: {
   title: string;
   meta: GameMeta;
@@ -312,6 +349,9 @@ function NotesStep({
   onSaveShare: () => void;
   error: string | null;
   saving: boolean;
+  defaultRecipientEmail: string | null; // <-- ADDITION
+  useDefaultRecipient: boolean; // <-- ADDITION
+  setUseDefaultRecipient: (b: boolean) => void; // <-- ADDITION
 }) {
   const [doneOpen, setDoneOpen] = useState(false);
 
@@ -347,11 +387,32 @@ function NotesStep({
           <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
             Notify recipients (admin view link)
           </p>
+
+          {/* <-- ADDITION: default-recipient checkbox. Disabled + unchecked when the
+               referee has no default set; checked by default and greys out the manual
+               field when a default exists. */}
+          <label
+            className={`mt-2 flex items-center gap-2 text-sm ${!defaultRecipientEmail ? "text-muted-foreground opacity-60" : ""}`}
+            title={!defaultRecipientEmail ? "Set a default recipient in Settings to use this" : undefined}
+          >
+            <input
+              type="checkbox"
+              checked={useDefaultRecipient}
+              disabled={!defaultRecipientEmail}
+              onChange={(e) => setUseDefaultRecipient(e.target.checked)}
+            />
+            Send to default recipient
+            {defaultRecipientEmail && (
+              <span className="text-muted-foreground">({defaultRecipientEmail})</span>
+            )}
+          </label>
+
           <input
             value={recipients}
             onChange={(e) => setRecipients(e.target.value)}
             placeholder="email1@example.com"
-            className="mt-2 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring"
+            disabled={useDefaultRecipient && !!defaultRecipientEmail} // <-- ADDITION: greyed out while default is in use
+            className="mt-2 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring disabled:opacity-50" // <-- CHANGE: added disabled:opacity-50
           />
           <p className="mt-2 text-[11px] text-muted-foreground">
             The recipient receives a notification only — they view notes in the admin view.
@@ -372,7 +433,7 @@ function NotesStep({
             onClick={() => { setShareOpen(true); setDoneOpen(false); }}
             className="inline-flex items-center justify-center gap-2 rounded-xl border border-border px-4 py-3 font-mono text-xs uppercase tracking-[0.2em]"
           >
-            <Send size={14} /> Save &amp; Share
+            <Send size={14} /> Save &amp; Send {/* <-- CHANGE: was "Save & Share" */}
           </button>
         </div>
       )}
@@ -383,7 +444,7 @@ function NotesStep({
 	  disabled={saving}
           className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 font-mono text-xs uppercase tracking-[0.2em] text-primary-foreground disabled:opacity-50"
         >
-          <Send size={14} /> Send notification &amp; save
+          <Send size={14} /> Send &amp; Save
         </button>
       )}
 

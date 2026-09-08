@@ -17,6 +17,7 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as JournalIndexRouteImport } from './routes/journal.index'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as PlaygroundAnimationsRouteImport } from './routes/playground.animations'
+import { Route as JournalSettingsRouteImport } from './routes/journal.settings'
 import { Route as JournalNewRouteImport } from './routes/journal.new'
 import { Route as JournalEntriesRouteImport } from './routes/journal.entries'
 import { Route as AcceptInviteTokenRouteImport } from './routes/accept-invite.$token'
@@ -66,6 +67,11 @@ const PlaygroundAnimationsRoute = PlaygroundAnimationsRouteImport.update({
   id: '/playground/animations',
   path: '/playground/animations',
   getParentRoute: () => rootRouteImport,
+} as any)
+const JournalSettingsRoute = JournalSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => JournalRoute,
 } as any)
 const JournalNewRoute = JournalNewRouteImport.update({
   id: '/new',
@@ -130,6 +136,7 @@ export interface FileRoutesByFullPath {
   '/accept-invite/$token': typeof AcceptInviteTokenRoute
   '/journal/entries': typeof JournalEntriesRouteWithChildren
   '/journal/new': typeof JournalNewRoute
+  '/journal/settings': typeof JournalSettingsRoute
   '/playground/animations': typeof PlaygroundAnimationsRoute
   '/journal/': typeof JournalIndexRoute
   '/admin/invites': typeof AuthenticatedAdminInvitesRoute
@@ -146,6 +153,7 @@ export interface FileRoutesByTo {
   '/accept-invite/$token': typeof AcceptInviteTokenRoute
   '/journal/entries': typeof JournalEntriesRouteWithChildren
   '/journal/new': typeof JournalNewRoute
+  '/journal/settings': typeof JournalSettingsRoute
   '/playground/animations': typeof PlaygroundAnimationsRoute
   '/': typeof AuthenticatedIndexRoute
   '/journal': typeof JournalIndexRoute
@@ -167,6 +175,7 @@ export interface FileRoutesById {
   '/accept-invite/$token': typeof AcceptInviteTokenRoute
   '/journal/entries': typeof JournalEntriesRouteWithChildren
   '/journal/new': typeof JournalNewRoute
+  '/journal/settings': typeof JournalSettingsRoute
   '/playground/animations': typeof PlaygroundAnimationsRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/journal/': typeof JournalIndexRoute
@@ -189,6 +198,7 @@ export interface FileRouteTypes {
     | '/accept-invite/$token'
     | '/journal/entries'
     | '/journal/new'
+    | '/journal/settings'
     | '/playground/animations'
     | '/journal/'
     | '/admin/invites'
@@ -205,6 +215,7 @@ export interface FileRouteTypes {
     | '/accept-invite/$token'
     | '/journal/entries'
     | '/journal/new'
+    | '/journal/settings'
     | '/playground/animations'
     | '/'
     | '/journal'
@@ -225,6 +236,7 @@ export interface FileRouteTypes {
     | '/accept-invite/$token'
     | '/journal/entries'
     | '/journal/new'
+    | '/journal/settings'
     | '/playground/animations'
     | '/_authenticated/'
     | '/journal/'
@@ -304,6 +316,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/playground/animations'
       preLoaderRoute: typeof PlaygroundAnimationsRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/journal/settings': {
+      id: '/journal/settings'
+      path: '/settings'
+      fullPath: '/journal/settings'
+      preLoaderRoute: typeof JournalSettingsRouteImport
+      parentRoute: typeof JournalRoute
     }
     '/journal/new': {
       id: '/journal/new'
@@ -424,12 +443,14 @@ const JournalEntriesRouteWithChildren = JournalEntriesRoute._addFileChildren(
 interface JournalRouteChildren {
   JournalEntriesRoute: typeof JournalEntriesRouteWithChildren
   JournalNewRoute: typeof JournalNewRoute
+  JournalSettingsRoute: typeof JournalSettingsRoute
   JournalIndexRoute: typeof JournalIndexRoute
 }
 
 const JournalRouteChildren: JournalRouteChildren = {
   JournalEntriesRoute: JournalEntriesRouteWithChildren,
   JournalNewRoute: JournalNewRoute,
+  JournalSettingsRoute: JournalSettingsRoute,
   JournalIndexRoute: JournalIndexRoute,
 }
 
