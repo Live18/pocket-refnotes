@@ -34,7 +34,10 @@ export default {
       const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
       // Send email
-      const emailResponse = await resend.emails.send({
+      // <-- CHANGE: destructure { data, error } — Resend's SDK returns this shape
+      // rather than throwing on API-level rejections (invalid recipient, unverified
+      // domain, etc.). Matches the pattern already fixed in process-report-jobs.
+      const { data: emailData, error: sendError } = await resend.emails.send({
         from: "noreply@refnotes.app",
         to: [email],
         subject: "Reset your RefNotes password",
@@ -45,8 +48,18 @@ export default {
         `,
       });
 
+      // <-- ADDITION: without this check, a Resend-side rejection still returned
+      // 200 to the caller — silently reporting success on a send that never went out.
+      if (sendError) {
+        console.error("Resend rejected password reset email:", sendError);
+        return new Response(
+          JSON.stringify({ error: sendError.message ?? "Resend rejected the email" }),
+          { status: 500, headers: { "Content-Type": "application/json" } }
+        );
+      }
+
       return new Response(
-        JSON.stringify(emailResponse),
+        JSON.stringify(emailData), // <-- CHANGE: was emailResponse (the whole {data,error} object) — now just the successful data, since error is already handled above
         { status: 200, headers: { "Content-Type": "application/json" } }
       );
     } catch (error) {

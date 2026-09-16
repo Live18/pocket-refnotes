@@ -51,7 +51,9 @@ export default {
       const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
       // Send email
-      const emailResponse = await resend.emails.send({
+      // <-- CHANGE: destructure { data, error } — same Resend-doesn't-throw gap
+      // already fixed in process-report-jobs and send-password-reset.
+      const { data: emailData, error: sendError } = await resend.emails.send({
         from: "noreply@refnotes.app",
         to: [email],
         subject: "Verify your RefNotes email",
@@ -62,8 +64,19 @@ export default {
         `,
       });
 
+      // <-- ADDITION: this is very likely the actual root cause of the
+      // "zero attempts logged, no error" verification-email delivery bug your
+      // notes flagged — a rejected send was silently reported as 200 success.
+      if (sendError) {
+        console.error("Resend rejected verification email:", sendError);
+        return new Response(
+          JSON.stringify({ error: sendError.message ?? "Resend rejected the email" }),
+          { status: 500, headers: { "Content-Type": "application/json" } }
+        );
+      }
+
       return new Response(
-        JSON.stringify(emailResponse),
+        JSON.stringify(emailData), // <-- CHANGE: was emailResponse — now just the successful data
         { status: 200, headers: { "Content-Type": "application/json" } }
       );
     } catch (error) {

@@ -90,7 +90,7 @@ function NewGamePage() {
           ))}
         </select>
         <input placeholder="Location" value={location} onChange={(e) => setLocation(e.target.value)} className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
-        <input placeholder="Crew (names)" value={crew} onChange={(e) => setCrew(e.target.value)} className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+        <input required placeholder="Crew (names)" value={crew} onChange={(e) => setCrew(e.target.value)} className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
         <button disabled={busy} className="w-full rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground disabled:opacity-50">
           {busy ? "…" : "Create"}
         </button>
