@@ -1,5 +1,9 @@
-import { createFileRoute, Outlet } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/journal")({
-  component: () => <Outlet />,
+  beforeLoad: ({ location }) => { // <-- CHANGE: was unconditional redirect — now only fires for the bare /journal path
+    if (location.pathname === "/journal") {
+      throw redirect({ to: "/" });
+    }
+  },
 });

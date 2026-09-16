@@ -34,6 +34,7 @@ function AdminLayout() {
         <nav className="mt-3 flex gap-3 text-sm">
           <Link to="/admin" activeOptions={{ exact: true }} activeProps={{ className: "font-bold underline" }}>Members</Link>
           <Link to="/admin/invites" activeProps={{ className: "font-bold underline" }}>Invites</Link>
+	  <Link to="/admin/activity-log" activeProps={{ className: "font-bold underline" }}>Activity Log</Link>
         </nav>
       </header>
       <Outlet />

@@ -12,7 +12,7 @@ export const Route = createFileRoute("/login")({
 });
 
 function LoginPage() {
-  const { isAuthenticated, previewAs } = useAuth();
+  const { isAuthenticated } = useAuth(); // <-- CHANGE: removed `previewAs` — only used by the Dev Preview block, now deleted
   const router = useRouter();
   const { redirect } = Route.useSearch();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
@@ -28,7 +28,6 @@ function LoginPage() {
     if (isAuthenticated) router.navigate({ to: redirect ?? "/" });
   }, [isAuthenticated, router, redirect]);
 
-  // Shared by the post-signup send and the resend button on the "check your inbox" screen.
   const sendVerificationEmail = async (targetEmail: string) => {
     const { error: sendError } = await supabase.functions.invoke("send-verification-email", {
       body: { email: targetEmail },
@@ -36,7 +35,6 @@ function LoginPage() {
     return sendError;
   };
 
-  // TODO: rate-limit login attempts.
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     setBusy(true); setError(null); setNotice(null);
@@ -137,26 +135,8 @@ function LoginPage() {
       </form>
       )}
 
-      {import.meta.env.DEV && (
-        <div className="mt-4 w-full max-w-sm space-y-2 rounded-xl border border-dashed border-border bg-muted/30 p-4">
-          <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Dev preview</p>
-          <p className="text-xs text-muted-foreground">No real auth, no data is saved. Lets you click through the post-login screens.</p>
-          <div className="grid grid-cols-3 gap-2">
-            <button
-              onClick={() => { previewAs("user"); router.navigate({ to: "/" }); }}
-              className="rounded-md border border-border bg-background px-3 py-2 text-xs hover:scale-105 active:scale-95 transition"
-            >Preview as User</button>
-            <button
-              onClick={() => { previewAs("admin"); router.navigate({ to: "/" }); }}
-              className="rounded-md border border-border bg-background px-3 py-2 text-xs hover:scale-105 active:scale-95 transition"
-            >Preview as Admin</button>
-            <button
-              onClick={() => { previewAs("super_admin"); router.navigate({ to: "/" }); }}
-              className="rounded-md border border-border bg-background px-3 py-2 text-xs hover:scale-105 active:scale-95 transition"
-            >Preview as Super Admin</button>
-          </div>
-        </div>
-      )}
+      {/* <-- REMOVED: entire Dev Preview block (import.meta.env.DEV && (...)) —
+           "Preview as User/Admin/Super Admin" buttons and its wrapper div */}
     </div>
   );
 }

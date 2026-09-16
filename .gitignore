@@ -34,3 +34,5 @@ dist-ssr
 supabase/functions/.env
 
 _archive-legacy-migrations/
+
+supabase/snippets/

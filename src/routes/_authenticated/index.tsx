@@ -4,16 +4,23 @@ import { useServerFn } from "@tanstack/react-start";
 import { listGames } from "@/lib/games.functions";
 import { useAuth } from "@/lib/auth-context";
 import { isPreviewUserId, previewMocks } from "@/lib/preview-mode";
-import { getCapacities } from "@/lib/permissions";
-import { ViewingBadge } from "@/components/ViewingBadge";
-import { Settings } from "lucide-react"; // <-- ADDITION
+import { AppHeader } from "@/components/AppHeader"; // <-- ADDITION
 
 export const Route = createFileRoute("/_authenticated/")({
   component: HomePage,
 });
 
+function formatGameDate(iso: string | null) {
+  if (!iso) return "no date";
+  return new Date(iso).toLocaleString("en-US", {
+    timeZone: "America/Los_Angeles",
+    dateStyle: "short",
+    timeStyle: "short",
+  });
+}
+
 function HomePage() {
-  const { me, signOut } = useAuth();
+  const { me } = useAuth(); // <-- CHANGE: was { me, signOut } — signOut now lives inside AppHeader
   const list = useServerFn(listGames);
   const isPreview = isPreviewUserId(me?.userId);
   const { data, isLoading } = useQuery({
@@ -23,27 +30,7 @@ function HomePage() {
 
   return (
     <div className="px-4 py-6 space-y-4">
-      <header className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Journal</h1>
-          <p className="text-xs text-muted-foreground">Welcome, {me?.email}</p>
-        </div>
-        <div className="flex gap-2">
-	  <ViewingBadge />
-          {getCapacities(me).includes("admin") && (
-  	    <Link to="/admin" className="rounded-md border border-border px-3 py-1.5 text-xs">Admin</Link>
-          )}
-          {/* <-- ADDITION: icon-only settings button, links to the new profile settings page */}
-          <Link
-            to="/journal/settings"
-            className="flex items-center rounded-md border border-border px-2 py-1.5"
-            aria-label="Settings"
-          >
-            <Settings size={14} />
-          </Link>
-          <button onClick={signOut} className="rounded-md border border-border px-3 py-1.5 text-xs">Sign out</button>
-        </div>
-      </header>
+      <AppHeader title="Journal" /> {/* <-- CHANGE: was the whole inline <header> block with ViewingBadge/Admin/Settings/Sign out — all moved into AppHeader */}
 
       <Link
         to="/games/new"
@@ -62,7 +49,7 @@ function HomePage() {
             <Link to="/games/$gameId" params={{ gameId: g.id }} className="block rounded-lg border border-border bg-card p-4 hover:scale-[1.02] transition">
               <p className="font-medium">{g.title}</p>
               <p className="text-xs text-muted-foreground">
-                {g.game_date ?? "no date"}{g.opponent ? ` · vs ${g.opponent}` : ""}
+                {formatGameDate(g.game_date)}{g.opponent ? ` · vs ${g.opponent}` : ""}
               </p>
             </Link>
           </li>

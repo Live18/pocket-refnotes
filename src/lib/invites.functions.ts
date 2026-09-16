@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { logActivity } from "@/lib/activity"; // <-- ADDITION
 
 /**
  * After signup or login, the user calls this with an invite token to bind
@@ -37,6 +38,16 @@ export const acceptInvite = createServerFn({ method: "POST" })
       .from("invites")
       .update({ accepted_at: new Date().toISOString() })
       .eq("id", invite.id);
+
+    // <-- ADDITION: uses supabaseAdmin (service role) since this handler is
+    // already privileged; actor is the new user logging their own signup
+    // completion, not an admin action — the INSERT policy's actor_id=auth.uid()
+    // check doesn't even apply here since service role bypasses RLS entirely.
+    await logActivity(supabaseAdmin, {
+      actorId: userId,
+      action: "invite_accepted",
+      metadata: { email: invite.email, role: invite.role },
+    });
 
     return { role: invite.role };
   });

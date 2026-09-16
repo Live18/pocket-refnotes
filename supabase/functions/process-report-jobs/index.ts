@@ -73,6 +73,22 @@ export default {
   }),
 };
 
+// <-- ADDITION: local copy of the shared logActivity helper — this function
+// runs in Deno (Supabase edge functions), a separate runtime from the
+// TanStack Start server, so it can't import src/lib/activity.ts directly.
+async function logActivity(
+  supabaseAdmin,
+  args: { actorId: string; action: string; targetId?: string | null; metadata?: Record<string, unknown> },
+) {
+  const { error } = await supabaseAdmin.from("activity_log").insert({
+    actor_id: args.actorId,
+    action: args.action,
+    target_id: args.targetId ?? null,
+    metadata: args.metadata ?? {},
+  });
+  if (error) console.error(`Failed to log activity (${args.action}):`, error);
+}
+
 // ---------------------------------------------------------------------------
 // Step 1: process queued jobs
 // ---------------------------------------------------------------------------
@@ -94,7 +110,9 @@ async function processQueuedJobs(supabaseAdmin, resend) {
           opponent,
           location,
           game_date,
-          crew
+          crew,
+	  gender,
+	  level
         )
       )
     `)
@@ -172,6 +190,15 @@ async function processQueuedJobs(supabaseAdmin, resend) {
       }
 
       sent++;
+
+      // <-- ADDITION: activity log entry — only on a genuinely successful
+      // send, not on failure (failures already have the retry/digest system)
+      await logActivity(supabaseAdmin, {
+        actorId: entry.author_id,
+        action: "report_sent",
+        targetId: entry.id,
+        metadata: { gameTitle: game?.title ?? null, recipientEmail: entry.recipient_email },
+      });
     } catch (sendError) {
       const nextAttempts = (job.attempts ?? 0) + 1;
       const nextStatus = nextAttempts >= 3 ? "failed" : "queued";
@@ -207,6 +234,17 @@ async function processQueuedJobs(supabaseAdmin, resend) {
         if (entryFailUpdateError) {
           console.error(`Failed to set send_failed for entry ${job.entry_id}:`, entryFailUpdateError);
         }
+
+        // <-- ADDITION: activity log entry for the terminal failure — gives
+        // the audit trail a complete picture (successes AND permanent
+        // failures), not just successes. Only logged once, here, not on
+        // each individual retry.
+        await logActivity(supabaseAdmin, {
+          actorId: entry.author_id,
+          action: "report_send_failed",
+          targetId: entry.id,
+          metadata: { gameTitle: game?.title ?? null, recipientEmail: entry.recipient_email, lastError: sendError.message, attempts: nextAttempts },
+        });
       } else {
         retried++;
       }
@@ -218,21 +256,17 @@ async function processQueuedJobs(supabaseAdmin, resend) {
 
 function buildReportEmailHtml(game, entry) {
   const gameDate = game?.game_date
-    ? new Date(game.game_date).toLocaleString()
+    ? new Date(game.game_date).toLocaleString("en-US", { timeZone: "America/Los_Angeles", dateStyle: "short", timeStyle: "short" })
     : "Date not set";
-  // Confirmed via debug logging (Sep 7): a real entry's body key was "text",
-  // not "notes" as documented for journal.new.tsx's flow — likely created via
-  // the separate/legacy New Entry route already flagged as an open
-  // discrepancy. Checking both keeps this working regardless of which route
-  // created the entry, until that discrepancy is resolved.
   const notes = entry?.body?.notes ?? entry?.body?.text ?? "";
+  const classification = [game?.gender, game?.level].filter(Boolean).join(" ");
 
   return `
     <div>
       <h2>${game?.title ?? "Game Report"}</h2>
-      <p><strong>Opponent:</strong> ${game?.opponent ?? "—"}</p>
       <p><strong>Location:</strong> ${game?.location ?? "—"}</p>
       <p><strong>Date:</strong> ${gameDate}</p>
+      ${classification ? `<p><strong>Classification:</strong> ${classification}</p>` : ""}
       <p><strong>Crew:</strong> ${game?.crew ?? "—"}</p>
       <hr />
       <p>${notes}</p>
@@ -400,7 +434,7 @@ function buildDigestEmailHtml(failedJobs, refereeNames) {
       const game = job.entries?.game;
       const authorId = job.entries?.author_id;
       const refereeName = refereeNames[authorId] ?? "Unknown referee";
-
+      
       return `
         <li>
           <strong>${game?.title ?? "Unknown game"}</strong>

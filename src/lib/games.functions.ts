@@ -17,9 +17,13 @@ export const listGames = createServerFn({ method: "GET" })
 const createGameSchema = z.object({
   title: z.string().min(1).max(200),
   gameDate: z.string().optional().nullable(),
-  opponent: z.string().max(200).optional().nullable(),
+  opponent: z.string().max(200).optional().nullable(), // <-- NOTE: kept for back-compat, no longer populated by the new form
   location: z.string().max(200).optional().nullable(),
-  crew: z.string().max(500).optional().nullable()
+  crew: z.string().max(500).optional().nullable(),
+  gender: z.enum(["Boys", "Girls"]), // <-- ADDITION
+  level: z.string().min(1).max(3), // <-- ADDITION
+  homeTeam: z.string().min(1).max(200), // <-- ADDITION
+  visitingTeam: z.string().min(1).max(200), // <-- ADDITION
 });
 
 export const createGame = createServerFn({ method: "POST" })
@@ -36,6 +40,10 @@ export const createGame = createServerFn({ method: "POST" })
         opponent: data.opponent ?? null,
         location: data.location ?? null,
 	crew: data.crew ?? null,
+        gender: data.gender, // <-- ADDITION
+        level: data.level, // <-- ADDITION
+        home_team: data.homeTeam, // <-- ADDITION
+        visiting_team: data.visitingTeam, // <-- ADDITION
       })
       .select()
       .single();

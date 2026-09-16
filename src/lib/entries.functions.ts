@@ -64,7 +64,7 @@ export const getEntryById = createServerFn({ method: "GET" })
     const { supabase, userId } = context;
     const { data: entry, error } = await supabase
       .from("entries")
-      .select("id, status, recipient_email, body, saved_at, sent_at, updated_at, game:games(id, title, game_date)")
+      .select("id, status, recipient_email, body, saved_at, sent_at, updated_at, game:games(id, title, game_date, location, gender, level, crew)")
       .eq("id", data.id)
       .eq("author_id", userId)
       .maybeSingle();

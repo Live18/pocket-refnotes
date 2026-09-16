@@ -1,6 +1,6 @@
 import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 import { ThemeProvider } from "@/lib/theme";
-import { JournalProvider } from "@/lib/journal";
+// <-- REMOVED: import { JournalProvider } from "@/lib/journal"; — confirmed unused (grep: no component calls useJournal(), context was never consumed)
 import { AuthProvider } from "@/lib/auth-context";
 import { BottomTabBar } from "@/components/BottomTabBar";
 import { RouteTransition } from "@/components/RouteTransition";
@@ -62,16 +62,15 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <AuthProvider>
-          <JournalProvider>
-            <div className="mx-auto flex min-h-screen max-w-md flex-col bg-background">
-              <main className="flex-1 pb-2">
-                <RouteTransition>
-                  <Outlet />
-                </RouteTransition>
-              </main>
-              <BottomTabBar />
-            </div>
-          </JournalProvider>
+          {/* <-- REMOVED: <JournalProvider> wrapper — unused context, safe to drop */}
+          <div className="mx-auto flex min-h-screen max-w-md flex-col bg-background">
+            <main className="flex-1 pb-2">
+              <RouteTransition>
+                <Outlet />
+              </RouteTransition>
+            </main>
+            <BottomTabBar />
+          </div>
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>

@@ -15,7 +15,7 @@ import { Resend } from "npm:resend@2.0.0";
 export default {
   fetch: withSupabase({ auth: ["publishable"] }, async (req, ctx) => {
     try {
-      const { email } = await req.json();
+      const { email, redirectTo } = await req.json(); // <-- CHANGE: accept an optional redirectTo from the caller
 
       // Using 'magiclink' rather than 'signup': generateLink's 'signup' type is
       // documented for creating a NEW user and is unreliable/undocumented for an
@@ -27,11 +27,22 @@ export default {
       const { data: verifyLinkData, error: verifyLinkError } = await ctx.supabaseAdmin.auth.admin.generateLink({
         type: "magiclink",
         email,
+        // <-- ADDITION: without this, the link falls back to the project's default
+        // Site URL instead of returning the user to the invite-accept page they
+        // started from. Must also be present in Supabase Auth's redirect allow-list
+        // or Supabase will silently ignore it and fall back anyway.
+        options: redirectTo ? { redirectTo } : undefined,
       });
 
       if (!verifyLinkData?.properties?.action_link) {
+        // <-- CHANGE: surface the actual error from generateLink instead of
+        // discarding it — this was previously silent, which is exactly what
+        // made the earlier "zero attempts logged, no error" delivery bug slow
+        // to diagnose.
         return new Response(
-          JSON.stringify({ error: "Failed to generate verification link" }),
+          JSON.stringify({
+            error: verifyLinkError?.message ?? "Failed to generate verification link",
+          }),
           { status: 500, headers: { "Content-Type": "application/json" } }
         );
       }
@@ -70,5 +81,5 @@ export default {
   2. Make an HTTP request:
   curl -i --location --request POST 'http://127.0.0.1:54321/functions/v1/send-verification-email' \
     --header 'apiKey: sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH' \
-    --data '{"email":"user@example.com"}'
+    --data '{"email":"user@example.com","redirectTo":"http://localhost:8080/accept-invite/some-token"}'
 */
