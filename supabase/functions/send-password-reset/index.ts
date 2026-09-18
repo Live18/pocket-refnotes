@@ -1,55 +1,42 @@
-// Follow this setup guide to integrate the Deno language server with your editor:
-// https://deno.land/manual/getting_started/setup_your_environment
-// This enables autocomplete, go to definition, etc.
-
-// Setup type definitions for built-in Supabase Runtime APIs
-import "@supabase/functions-js/edge-runtime.d.ts";
-import { withSupabase } from "@supabase/server";
-
-// Import Resend client
-import { Resend } from "npm:resend@2.0.0";
-
-// This endpoint uses 'publishable' | 'secret' access, apiKey is required.
-// Use publishable for Client-facing, key-validated endpoints
-// Use secret for Server-to-server, internal calls
 export default {
   fetch: withSupabase({ auth: ["publishable"] }, async (req, ctx) => {
     try {
-      const { email } = await req.json();
+      const { email, redirectTo } = await req.json(); // <-- CHANGE: accept redirectTo, matching send-verification-email
 
-      // Generate password reset link
-      const { data: resetLinkData } = await ctx.supabaseAdmin.auth.admin.generateLink({
+      const { data: resetLinkData, error: resetLinkError } = await ctx.supabaseAdmin.auth.admin.generateLink({
         type: "recovery",
         email,
+        options: { redirectTo: redirectTo ?? "https://refnotes.app/reset-password" }, // <-- CHANGE: placeholder path — confirm real route
       });
 
-      if (!resetLinkData?.properties?.action_link) {
+      // <-- CHANGE: action_link's host is always broken (hardcoded 127.0.0.1 by
+      // the Supabase CLI — see supabase/cli#4006, no config.toml override exists).
+      // Only hashed_token is trustworthy; rebuild the link ourselves against our
+      // real domain through the same /api/ nginx proxy the client SDK already uses.
+      const resetUrl = resetLinkData?.properties?.hashed_token
+        ? `https://refnotes.app/api/auth/v1/verify?token=${resetLinkData.properties.hashed_token}&type=recovery&redirect_to=${encodeURIComponent(redirectTo ?? "https://refnotes.app/reset-password")}`
+        : undefined;
+
+      if (!resetUrl) { // <-- CHANGE: was checking action_link
         return new Response(
-          JSON.stringify({ error: "Failed to generate reset link" }),
+          JSON.stringify({ error: resetLinkError?.message ?? "Failed to generate reset link" }),
           { status: 500, headers: { "Content-Type": "application/json" } }
         );
       }
 
-      // Initialize Resend client
       const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
-      // Send email
-      // <-- CHANGE: destructure { data, error } — Resend's SDK returns this shape
-      // rather than throwing on API-level rejections (invalid recipient, unverified
-      // domain, etc.). Matches the pattern already fixed in process-report-jobs.
       const { data: emailData, error: sendError } = await resend.emails.send({
         from: "noreply@refnotes.app",
         to: [email],
         subject: "Reset your RefNotes password",
         html: `
           <div>
-            <a href="${resetLinkData?.properties?.action_link}" style="display: inline-block; padding: 10px 20px; background-color: #3b82f6; color: white; text-decoration: none; border-radius: 4px;">Reset Password</a>
+            <a href="${resetUrl}" style="display: inline-block; padding: 10px 20px; background-color: #3b82f6; color: white; text-decoration: none; border-radius: 4px;">Reset Password</a>
           </div>
         `,
       });
 
-      // <-- ADDITION: without this check, a Resend-side rejection still returned
-      // 200 to the caller — silently reporting success on a send that never went out.
       if (sendError) {
         console.error("Resend rejected password reset email:", sendError);
         return new Response(
@@ -59,7 +46,7 @@ export default {
       }
 
       return new Response(
-        JSON.stringify(emailData), // <-- CHANGE: was emailResponse (the whole {data,error} object) — now just the successful data, since error is already handled above
+        JSON.stringify(emailData),
         { status: 200, headers: { "Content-Type": "application/json" } }
       );
     } catch (error) {
@@ -71,14 +58,3 @@ export default {
     }
   }),
 };
-
-/* To invoke locally:
-
-  1. Run `supabase start` (see: https://supabase.com/docs/reference/cli/supabase-start)
-  2. Make an HTTP request:
-
-  curl -i --location --request POST 'http://127.0.0.1:54321/functions/v1/send-password-reset' \
-    --header 'apiKey: sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH' \
-    --data '{"email":"user@example.com"}'
-
-*/

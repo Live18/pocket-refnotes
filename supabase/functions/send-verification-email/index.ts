@@ -9,36 +9,26 @@ import { withSupabase } from "@supabase/server";
 // Import Resend client
 import { Resend } from "npm:resend@2.0.0";
 
-// This endpoint uses 'publishable' | 'secret' access, apiKey is required.
-// Use publishable for Client-facing, key-validated endpoints
-// Use secret for Server-to-server, internal calls
 export default {
   fetch: withSupabase({ auth: ["publishable"] }, async (req, ctx) => {
     try {
-      const { email, redirectTo } = await req.json(); // <-- CHANGE: accept an optional redirectTo from the caller
+      const { email, redirectTo } = await req.json();
 
-      // Using 'magiclink' rather than 'signup': generateLink's 'signup' type is
-      // documented for creating a NEW user and is unreliable/undocumented for an
-      // already-created-but-unconfirmed user (the case here, since real signup via
-      // /auth/v1/signup already created the account). 'magiclink' is documented to
-      // work for existing users and, when clicked, confirms the email as a side
-      // effect of completing the login. Confirm this behaves as expected via a
-      // direct curl test before wiring this into the signup flow.
       const { data: verifyLinkData, error: verifyLinkError } = await ctx.supabaseAdmin.auth.admin.generateLink({
         type: "magiclink",
         email,
-        // <-- ADDITION: without this, the link falls back to the project's default
-        // Site URL instead of returning the user to the invite-accept page they
-        // started from. Must also be present in Supabase Auth's redirect allow-list
-        // or Supabase will silently ignore it and fall back anyway.
         options: redirectTo ? { redirectTo } : undefined,
       });
 
-      if (!verifyLinkData?.properties?.action_link) {
-        // <-- CHANGE: surface the actual error from generateLink instead of
-        // discarding it — this was previously silent, which is exactly what
-        // made the earlier "zero attempts logged, no error" delivery bug slow
-        // to diagnose.
+      // <-- CHANGE: action_link's host is always broken (hardcoded 127.0.0.1 by
+      // the Supabase CLI — see supabase/cli#4006, no config.toml override exists).
+      // Only hashed_token is trustworthy; rebuild the link ourselves against our
+      // real domain through the same /api/ nginx proxy the client SDK already uses.
+      const verificationUrl = verifyLinkData?.properties?.hashed_token
+        ? `https://refnotes.app/api/auth/v1/verify?token=${verifyLinkData.properties.hashed_token}&type=magiclink&redirect_to=${encodeURIComponent(redirectTo ?? "https://refnotes.app")}`
+        : undefined;
+
+      if (!verificationUrl) { // <-- CHANGE: was checking verifyLinkData?.properties?.action_link
         return new Response(
           JSON.stringify({
             error: verifyLinkError?.message ?? "Failed to generate verification link",
@@ -47,26 +37,19 @@ export default {
         );
       }
 
-      // Initialize Resend client
       const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
-      // Send email
-      // <-- CHANGE: destructure { data, error } — same Resend-doesn't-throw gap
-      // already fixed in process-report-jobs and send-password-reset.
       const { data: emailData, error: sendError } = await resend.emails.send({
         from: "noreply@refnotes.app",
         to: [email],
         subject: "Verify your RefNotes email",
         html: `
           <div>
-            <a href="${verifyLinkData?.properties?.action_link}" style="display: inline-block; padding: 10px 20px; background-color: #3b82f6; color: white; text-decoration: none; border-radius: 4px;">Verify Email</a>
+            <a href="${verificationUrl}" style="display: inline-block; padding: 10px 20px; background-color: #3b82f6; color: white; text-decoration: none; border-radius: 4px;">Verify Email</a>
           </div>
         `,
       });
 
-      // <-- ADDITION: this is very likely the actual root cause of the
-      // "zero attempts logged, no error" verification-email delivery bug your
-      // notes flagged — a rejected send was silently reported as 200 success.
       if (sendError) {
         console.error("Resend rejected verification email:", sendError);
         return new Response(
@@ -76,7 +59,7 @@ export default {
       }
 
       return new Response(
-        JSON.stringify(emailData), // <-- CHANGE: was emailResponse — now just the successful data
+        JSON.stringify(emailData),
         { status: 200, headers: { "Content-Type": "application/json" } }
       );
     } catch (error) {
