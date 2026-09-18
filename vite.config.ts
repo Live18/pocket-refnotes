@@ -6,4 +6,4 @@
 // You can pass additional config via defineConfig({ vite: { ... } }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
-export default defineConfig();
+export default defineConfig({ nitro: { preset: "node-server" } }); // <-- ADDITION: force-enable the Nitro deploy plugin for production builds outside Lovable's own platform
