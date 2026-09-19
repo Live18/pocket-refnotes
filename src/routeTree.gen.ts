@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as ObservationRouteImport } from './routes/observation'
 import { Route as MentorRouteImport } from './routes/mentor'
 import { Route as LoginRouteImport } from './routes/login'
@@ -29,6 +30,11 @@ import { Route as AuthenticatedAdminActivityLogRouteImport } from './routes/_aut
 import { Route as AuthenticatedJournalEntriesIndexRouteImport } from './routes/_authenticated/journal.entries.index'
 import { Route as AuthenticatedJournalEntriesIdRouteImport } from './routes/_authenticated/journal.entries.$id'
 
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ObservationRoute = ObservationRouteImport.update({
   id: '/observation',
   path: '/observation',
@@ -136,6 +142,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/mentor': typeof MentorRoute
   '/observation': typeof ObservationRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/accept-invite/$token': typeof AcceptInviteTokenRoute
   '/journal/settings': typeof JournalSettingsRoute
@@ -155,6 +162,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/mentor': typeof MentorRoute
   '/observation': typeof ObservationRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/accept-invite/$token': typeof AcceptInviteTokenRoute
   '/journal/settings': typeof JournalSettingsRoute
   '/playground/animations': typeof PlaygroundAnimationsRoute
@@ -175,6 +183,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/mentor': typeof MentorRoute
   '/observation': typeof ObservationRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/accept-invite/$token': typeof AcceptInviteTokenRoute
   '/journal/settings': typeof JournalSettingsRoute
@@ -198,6 +207,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/mentor'
     | '/observation'
+    | '/reset-password'
     | '/admin'
     | '/accept-invite/$token'
     | '/journal/settings'
@@ -217,6 +227,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/mentor'
     | '/observation'
+    | '/reset-password'
     | '/accept-invite/$token'
     | '/journal/settings'
     | '/playground/animations'
@@ -236,6 +247,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/mentor'
     | '/observation'
+    | '/reset-password'
     | '/_authenticated/admin'
     | '/accept-invite/$token'
     | '/journal/settings'
@@ -258,6 +270,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   MentorRoute: typeof MentorRoute
   ObservationRoute: typeof ObservationRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   AcceptInviteTokenRoute: typeof AcceptInviteTokenRoute
   PlaygroundAnimationsRoute: typeof PlaygroundAnimationsRoute
   ApiPublicReportCallbackRoute: typeof ApiPublicReportCallbackRoute
@@ -265,6 +278,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/observation': {
       id: '/observation'
       path: '/observation'
@@ -471,6 +491,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   MentorRoute: MentorRoute,
   ObservationRoute: ObservationRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   AcceptInviteTokenRoute: AcceptInviteTokenRoute,
   PlaygroundAnimationsRoute: PlaygroundAnimationsRoute,
   ApiPublicReportCallbackRoute: ApiPublicReportCallbackRoute,
