@@ -7,7 +7,9 @@ export const listGames = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { data, error } = await context.supabase
       .from("games")
-      .select("id, title, game_date, opponent, location, created_at, crew")
+      // Includes the caller's own report (status + notes) so the home list can search it.
+      .select("id, title, game_date, opponent, location, created_at, crew, level, gender, home_team, visiting_team, entries(status, body)")
+      .eq("entries.author_id", context.userId)
       // Journal shows the caller's own games only — admins' wider read access is for admin views.
       .eq("created_by", context.userId)
       .order("game_date", { ascending: false, nullsFirst: false })
