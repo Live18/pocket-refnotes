@@ -1,7 +1,7 @@
 // Client-side keyword search shared by the Journal home (games) and Journal Archive (reports) lists.
 //
 // Matching rules:
-// - Case-insensitive; every typed word must match somewhere in the item (any field, any order).
+// - Case- and accent-insensitive ("Ramirez" finds "Ramírez"); every typed word must match somewhere in the item (any field, any order).
 // - Punctuation and spaces inside a word are ignored, so "handcheck" finds "hand-check" and "hand check".
 // - Exact pass first. Only if it finds nothing do we fall back to a typo-tolerant pass, where a word
 //   may be a letter or two off (missing, extra, wrong, or two letters swapped).
@@ -42,17 +42,22 @@ export type SearchOutcome<T> = {
 };
 
 const WORD_CHAR = /[\p{L}\p{N}]/u;
-const WORD_RUN = /[\p{L}\p{N}]+/gu;
+// Includes combining marks so a word typed with decomposed accents isn't split in two.
+const WORD_RUN = /[\p{L}\p{N}\p{M}]+/gu;
 
-// Lowercased letters/digits only, with a map from each kept char back to its index in the original string.
+// Lowercase and drop accents, so "Ramirez" matches "Ramírez" exactly (and vice versa).
+function fold(s: string) {
+  return s.toLowerCase().normalize("NFD").replace(/\p{M}/gu, "");
+}
+
+// Folded letters/digits only, with a map from each kept char back to its index in the original string.
 function compact(s: string) {
   let text = "";
   const map: number[] = [];
   for (let i = 0; i < s.length; i++) {
-    const ch = s[i];
-    if (!WORD_CHAR.test(ch)) continue;
-    for (const lower of ch.toLowerCase()) {
-      text += lower;
+    for (const piece of fold(s[i])) {
+      if (!WORD_CHAR.test(piece)) continue;
+      text += piece;
       map.push(i);
     }
   }
@@ -105,7 +110,10 @@ function exactRanges(value: string, term: string): Range[] {
   for (;;) {
     const at = text.indexOf(term, from);
     if (at < 0) break;
-    ranges.push([map[at], map[at + term.length - 1] + 1]);
+    let end = map[at + term.length - 1] + 1;
+    // Keep a decomposed accent (e.g. "e" + U+0301) inside the highlight with its letter.
+    while (end < value.length && /\p{M}/u.test(value[end])) end++;
+    ranges.push([map[at], end]);
     from = at + 1;
   }
   return ranges;
@@ -119,7 +127,7 @@ function fuzzyRanges(value: string, term: string): { ranges: Range[]; distance: 
   let best = Infinity;
   if (max === 0) return { ranges, distance: best };
   for (const m of value.matchAll(WORD_RUN)) {
-    const word = m[0].toLowerCase();
+    const word = fold(m[0]);
     const start = m.index ?? 0;
     let d = typoDistance(term, word, max);
     if (d > max && word.length > term.length) d = typoDistance(term, word.slice(0, term.length), max);
