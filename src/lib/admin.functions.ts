@@ -264,3 +264,66 @@ export const fulfillActivityLogRequest = createServerFn({ method: "POST" })
 
     return { entries: entries ?? [] };
   });
+// ---------------------------------------------------------------------------
+// Admin Reports tab — every user's DELIVERED reports (status saved_sent with
+// sent_at stamped). RLS already limits admins to delivered reports from other
+// users; the explicit filters here also keep out the admin's OWN unsent
+// reports, which RLS allows them to read as the author.
+// ---------------------------------------------------------------------------
+
+const DELIVERED_REPORT_COLUMNS =
+  "id, author_id, recipient_email, sent_at, body, game:games(id, title, game_date, location, crew, level, gender, home_team, visiting_team)";
+
+async function authorNames(supabase: any, authorIds: string[]) {
+  const ids = [...new Set(authorIds)];
+  if (ids.length === 0) return new Map<string, string>();
+  const { data, error } = await supabase.from("profiles").select("id, display_name, email").in("id", ids);
+  if (error) throw new Error(error.message);
+  return new Map<string, string>((data ?? []).map((p: any) => [p.id, p.display_name || p.email || "Unknown referee"]));
+}
+
+export const listDeliveredReports = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context.supabase, context.userId);
+
+    // Page past PostgREST's 1,000-row cap so a full season never gets silently truncated.
+    const PAGE = 1000;
+    const rows: any[] = [];
+    for (let from = 0; ; from += PAGE) {
+      const { data, error } = await context.supabase
+        .from("entries")
+        .select(DELIVERED_REPORT_COLUMNS)
+        .eq("status", "saved_sent")
+        .not("sent_at", "is", null)
+        .order("sent_at", { ascending: false })
+        .order("id", { ascending: true })
+        .range(from, from + PAGE - 1);
+      if (error) throw new Error(error.message);
+      rows.push(...(data ?? []));
+      if (!data || data.length < PAGE) break;
+    }
+
+    const names = await authorNames(context.supabase, rows.map((r) => r.author_id));
+    return {
+      reports: rows.map((r) => ({ ...r, author_name: names.get(r.author_id) ?? "Unknown referee" })),
+    };
+  });
+
+export const getDeliveredReport = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { id: string }) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const { data: report, error } = await context.supabase
+      .from("entries")
+      .select(DELIVERED_REPORT_COLUMNS)
+      .eq("id", data.id)
+      .eq("status", "saved_sent")
+      .not("sent_at", "is", null)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!report) return { report: null };
+    const names = await authorNames(context.supabase, [report.author_id]);
+    return { report: { ...report, author_name: names.get(report.author_id) ?? "Unknown referee" } };
+  });

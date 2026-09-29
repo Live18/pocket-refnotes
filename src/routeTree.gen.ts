@@ -28,7 +28,9 @@ import { Route as AuthenticatedGamesGameIdRouteImport } from './routes/_authenti
 import { Route as AuthenticatedAdminInvitesRouteImport } from './routes/_authenticated/admin.invites'
 import { Route as AuthenticatedAdminActivityLogRouteImport } from './routes/_authenticated/admin.activity-log'
 import { Route as AuthenticatedJournalEntriesIndexRouteImport } from './routes/_authenticated/journal.entries.index'
+import { Route as AuthenticatedAdminReportsIndexRouteImport } from './routes/_authenticated/admin.reports.index'
 import { Route as AuthenticatedJournalEntriesIdRouteImport } from './routes/_authenticated/journal.entries.$id'
+import { Route as AuthenticatedAdminReportsIdRouteImport } from './routes/_authenticated/admin.reports.$id'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -129,11 +131,23 @@ const AuthenticatedJournalEntriesIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedJournalEntriesRoute,
   } as any)
+const AuthenticatedAdminReportsIndexRoute =
+  AuthenticatedAdminReportsIndexRouteImport.update({
+    id: '/reports/',
+    path: '/reports/',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedJournalEntriesIdRoute =
   AuthenticatedJournalEntriesIdRouteImport.update({
     id: '/$id',
     path: '/$id',
     getParentRoute: () => AuthenticatedJournalEntriesRoute,
+  } as any)
+const AuthenticatedAdminReportsIdRoute =
+  AuthenticatedAdminReportsIdRouteImport.update({
+    id: '/reports/$id',
+    path: '/reports/$id',
+    getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -154,7 +168,9 @@ export interface FileRoutesByFullPath {
   '/journal/entries': typeof AuthenticatedJournalEntriesRouteWithChildren
   '/api/public/report-callback': typeof ApiPublicReportCallbackRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
+  '/admin/reports/$id': typeof AuthenticatedAdminReportsIdRoute
   '/journal/entries/$id': typeof AuthenticatedJournalEntriesIdRoute
+  '/admin/reports/': typeof AuthenticatedAdminReportsIndexRoute
   '/journal/entries/': typeof AuthenticatedJournalEntriesIndexRoute
 }
 export interface FileRoutesByTo {
@@ -173,7 +189,9 @@ export interface FileRoutesByTo {
   '/games/new': typeof AuthenticatedGamesNewRoute
   '/api/public/report-callback': typeof ApiPublicReportCallbackRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
+  '/admin/reports/$id': typeof AuthenticatedAdminReportsIdRoute
   '/journal/entries/$id': typeof AuthenticatedJournalEntriesIdRoute
+  '/admin/reports': typeof AuthenticatedAdminReportsIndexRoute
   '/journal/entries': typeof AuthenticatedJournalEntriesIndexRoute
 }
 export interface FileRoutesById {
@@ -196,7 +214,9 @@ export interface FileRoutesById {
   '/_authenticated/journal/entries': typeof AuthenticatedJournalEntriesRouteWithChildren
   '/api/public/report-callback': typeof ApiPublicReportCallbackRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
+  '/_authenticated/admin/reports/$id': typeof AuthenticatedAdminReportsIdRoute
   '/_authenticated/journal/entries/$id': typeof AuthenticatedJournalEntriesIdRoute
+  '/_authenticated/admin/reports/': typeof AuthenticatedAdminReportsIndexRoute
   '/_authenticated/journal/entries/': typeof AuthenticatedJournalEntriesIndexRoute
 }
 export interface FileRouteTypes {
@@ -219,7 +239,9 @@ export interface FileRouteTypes {
     | '/journal/entries'
     | '/api/public/report-callback'
     | '/admin/'
+    | '/admin/reports/$id'
     | '/journal/entries/$id'
+    | '/admin/reports/'
     | '/journal/entries/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -238,7 +260,9 @@ export interface FileRouteTypes {
     | '/games/new'
     | '/api/public/report-callback'
     | '/admin'
+    | '/admin/reports/$id'
     | '/journal/entries/$id'
+    | '/admin/reports'
     | '/journal/entries'
   id:
     | '__root__'
@@ -260,7 +284,9 @@ export interface FileRouteTypes {
     | '/_authenticated/journal/entries'
     | '/api/public/report-callback'
     | '/_authenticated/admin/'
+    | '/_authenticated/admin/reports/$id'
     | '/_authenticated/journal/entries/$id'
+    | '/_authenticated/admin/reports/'
     | '/_authenticated/journal/entries/'
   fileRoutesById: FileRoutesById
 }
@@ -411,12 +437,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedJournalEntriesIndexRouteImport
       parentRoute: typeof AuthenticatedJournalEntriesRoute
     }
+    '/_authenticated/admin/reports/': {
+      id: '/_authenticated/admin/reports/'
+      path: '/reports'
+      fullPath: '/admin/reports/'
+      preLoaderRoute: typeof AuthenticatedAdminReportsIndexRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/journal/entries/$id': {
       id: '/_authenticated/journal/entries/$id'
       path: '/$id'
       fullPath: '/journal/entries/$id'
       preLoaderRoute: typeof AuthenticatedJournalEntriesIdRouteImport
       parentRoute: typeof AuthenticatedJournalEntriesRoute
+    }
+    '/_authenticated/admin/reports/$id': {
+      id: '/_authenticated/admin/reports/$id'
+      path: '/reports/$id'
+      fullPath: '/admin/reports/$id'
+      preLoaderRoute: typeof AuthenticatedAdminReportsIdRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
     }
   }
 }
@@ -425,12 +465,16 @@ interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminActivityLogRoute: typeof AuthenticatedAdminActivityLogRoute
   AuthenticatedAdminInvitesRoute: typeof AuthenticatedAdminInvitesRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
+  AuthenticatedAdminReportsIdRoute: typeof AuthenticatedAdminReportsIdRoute
+  AuthenticatedAdminReportsIndexRoute: typeof AuthenticatedAdminReportsIndexRoute
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminActivityLogRoute: AuthenticatedAdminActivityLogRoute,
   AuthenticatedAdminInvitesRoute: AuthenticatedAdminInvitesRoute,
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
+  AuthenticatedAdminReportsIdRoute: AuthenticatedAdminReportsIdRoute,
+  AuthenticatedAdminReportsIndexRoute: AuthenticatedAdminReportsIndexRoute,
 }
 
 const AuthenticatedAdminRouteWithChildren =
