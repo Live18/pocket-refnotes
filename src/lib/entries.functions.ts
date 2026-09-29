@@ -135,7 +135,7 @@ export const listMyEntries = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { data, error } = await context.supabase
       .from("entries")
-      .select("id, status, recipient_email, saved_at, sent_at, updated_at, game:games(id, title, game_date)")
+      .select("id, status, recipient_email, body, saved_at, sent_at, updated_at, game:games(id, title, game_date, location, gender, level, crew, home_team, visiting_team)")
       .order("updated_at", { ascending: false });
     if (error) throw new Error(error.message);
     return { entries: data ?? [] };
