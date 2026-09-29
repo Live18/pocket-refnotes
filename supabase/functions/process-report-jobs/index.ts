@@ -254,6 +254,22 @@ async function processQueuedJobs(supabaseAdmin, resend) {
   return { processed: queuedJobs.length, sent, failed, retried };
 }
 
+// User-typed text (notes, titles, teams, crew, location, error strings) goes into email HTML
+// escaped, so it always shows exactly as typed and can never be interpreted as markup.
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+// Escaped, with the referee's own line breaks preserved.
+function escapeMultiline(value) {
+  return escapeHtml(value).replace(/\r?\n/g, "<br />");
+}
+
 function buildReportEmailHtml(game, entry) {
   const gameDate = game?.game_date
     ? new Date(game.game_date).toLocaleString("en-US", { timeZone: "America/Los_Angeles", dateStyle: "short", timeStyle: "short" })
@@ -263,13 +279,13 @@ function buildReportEmailHtml(game, entry) {
 
   return `
     <div>
-      <h2>${game?.title ?? "Game Report"}</h2>
-      <p><strong>Location:</strong> ${game?.location ?? "—"}</p>
-      <p><strong>Date:</strong> ${gameDate}</p>
-      ${classification ? `<p><strong>Classification:</strong> ${classification}</p>` : ""}
-      <p><strong>Crew:</strong> ${game?.crew ?? "—"}</p>
+      <h2>${escapeHtml(game?.title ?? "Game Report")}</h2>
+      <p><strong>Location:</strong> ${escapeHtml(game?.location ?? "—")}</p>
+      <p><strong>Date:</strong> ${escapeHtml(gameDate)}</p>
+      ${classification ? `<p><strong>Classification:</strong> ${escapeHtml(classification)}</p>` : ""}
+      <p><strong>Crew:</strong> ${escapeHtml(game?.crew ?? "—")}</p>
       <hr />
-      <p>${notes}</p>
+      <p>${escapeMultiline(notes)}</p>
     </div>
   `;
 }
@@ -437,10 +453,10 @@ function buildDigestEmailHtml(failedJobs, refereeNames) {
       
       return `
         <li>
-          <strong>${game?.title ?? "Unknown game"}</strong>
-          — ${refereeName}
-          — ${job.attempts} attempt(s)
-          — ${job.last_error ?? "No error message recorded"}
+          <strong>${escapeHtml(game?.title ?? "Unknown game")}</strong>
+          — ${escapeHtml(refereeName)}
+          — ${escapeHtml(job.attempts)} attempt(s)
+          — ${escapeHtml(job.last_error ?? "No error message recorded")}
         </li>
       `;
     })

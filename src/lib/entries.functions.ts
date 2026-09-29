@@ -109,7 +109,11 @@ export const saveAndSend = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({
     gameId: z.string().uuid(),
-    body: bodySchema,
+    // A sent report needs notes; whitespace alone doesn't count. (Saving privately allows empty notes.)
+    body: bodySchema.refine(
+      (b) => typeof b.text === "string" && b.text.trim().length > 0,
+      { message: "A report needs notes before it can be sent." },
+    ),
     recipientEmail: z.string().email(),
   }).parse(input))
   .handler(async ({ data, context }) => {
@@ -136,6 +140,8 @@ export const listMyEntries = createServerFn({ method: "GET" })
     const { data, error } = await context.supabase
       .from("entries")
       .select("id, status, recipient_email, saved_at, sent_at, updated_at, game:games(id, title, game_date)")
+      // Journal shows the caller's own reports only — admins' wider read access is for admin views.
+      .eq("author_id", context.userId)
       .order("updated_at", { ascending: false });
     if (error) throw new Error(error.message);
     return { entries: data ?? [] };

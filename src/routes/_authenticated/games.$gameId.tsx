@@ -190,7 +190,12 @@ function EntryEditor() {
           <button onClick={onSavePrivate} disabled={busy} className="rounded-md border border-border px-3 py-2 text-sm disabled:opacity-50 hover:scale-105 active:scale-95 transition">
             Save & keep private
           </button>
-          <button onClick={onSaveSend} disabled={busy} className="rounded-md bg-primary px-3 py-2 text-sm text-primary-foreground disabled:opacity-50 hover:scale-105 active:scale-95 transition">
+          <button
+            onClick={onSaveSend}
+            disabled={busy || !text.trim()}
+            title={!text.trim() ? "Add notes before sending" : undefined}
+            className="rounded-md bg-primary px-3 py-2 text-sm text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 disabled:hover:scale-100 active:scale-95 transition"
+          >
             Save & send report
           </button>
         </div>

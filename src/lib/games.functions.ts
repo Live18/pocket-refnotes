@@ -8,6 +8,8 @@ export const listGames = createServerFn({ method: "GET" })
     const { data, error } = await context.supabase
       .from("games")
       .select("id, title, game_date, opponent, location, created_at, crew")
+      // Journal shows the caller's own games only — admins' wider read access is for admin views.
+      .eq("created_by", context.userId)
       .order("game_date", { ascending: false, nullsFirst: false })
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
@@ -56,7 +58,7 @@ export const getGame = createServerFn({ method: "GET" })
   .inputValidator((input: { gameId: string }) => z.object({ gameId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { data: game, error } = await context.supabase
-      .from("games").select("*").eq("id", data.gameId).maybeSingle();
+      .from("games").select("*").eq("id", data.gameId).eq("created_by", context.userId).maybeSingle();
     if (error) throw new Error(error.message);
     return { game };
   });
