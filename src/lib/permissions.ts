@@ -11,18 +11,20 @@ export type Action =
   | "reports:manage"
   | "activityLog:request"
   | "admins:manage"
-  | "activityLog:manage";
+  | "activityLog:manage"
+  | "reportExport:request"
+  | "reportExport:manage";
 
 const ROLE_PERMISSIONS: Record<Role, Action[]> = {
   user: ["entries:create", "entries:save", "entries:delete", "entries:send"],
   admin: [
     "entries:create", "entries:save", "entries:delete", "entries:send",
-    "users:manage", "reports:manage", "activityLog:request",
+    "users:manage", "reports:manage", "activityLog:request", "reportExport:request",
   ],
   super_admin: [
     "entries:create", "entries:save", "entries:delete", "entries:send",
     "users:manage", "reports:manage", "activityLog:request",
-    "admins:manage", "activityLog:manage",
+    "reportExport:request", "admins:manage", "activityLog:manage", "reportExport:manage",
   ],
 };
 

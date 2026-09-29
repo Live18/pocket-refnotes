@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { logActivity } from "@/lib/activity";
+import { pacificDayRange } from "@/lib/report-export";
 
 async function assertAdmin(
   supabase: any,
@@ -274,40 +275,53 @@ export const fulfillActivityLogRequest = createServerFn({ method: "POST" })
 const DELIVERED_REPORT_COLUMNS =
   "id, author_id, recipient_email, sent_at, body, game:games(id, title, game_date, location, crew, level, gender, home_team, visiting_team)";
 
-async function authorNames(supabase: any, authorIds: string[]) {
+async function authorProfiles(supabase: any, authorIds: string[]) {
   const ids = [...new Set(authorIds)];
-  if (ids.length === 0) return new Map<string, string>();
+  const byId = new Map<string, { name: string; email: string | null }>();
+  if (ids.length === 0) return byId;
   const { data, error } = await supabase.from("profiles").select("id, display_name, email").in("id", ids);
   if (error) throw new Error(error.message);
-  return new Map<string, string>((data ?? []).map((p: any) => [p.id, p.display_name || p.email || "Unknown referee"]));
+  (data ?? []).forEach((p: any) => byId.set(p.id, { name: p.display_name || p.email || "Unknown referee", email: p.email ?? null }));
+  return byId;
+}
+
+// Delivered reports (optionally within a sent_at window), with the filing referee's name/email.
+// Pages past PostgREST's 1,000-row cap so a full season never gets silently truncated.
+async function fetchDeliveredReports(
+  supabase: any,
+  opts: { sentFrom?: Date | null; sentBefore?: Date | null; ascending?: boolean } = {},
+) {
+  const PAGE = 1000;
+  const rows: any[] = [];
+  for (let from = 0; ; from += PAGE) {
+    let query = supabase
+      .from("entries")
+      .select(DELIVERED_REPORT_COLUMNS)
+      .eq("status", "saved_sent")
+      .not("sent_at", "is", null);
+    if (opts.sentFrom) query = query.gte("sent_at", opts.sentFrom.toISOString());
+    if (opts.sentBefore) query = query.lt("sent_at", opts.sentBefore.toISOString());
+    const { data, error } = await query
+      .order("sent_at", { ascending: opts.ascending ?? false })
+      .order("id", { ascending: true })
+      .range(from, from + PAGE - 1);
+    if (error) throw new Error(error.message);
+    rows.push(...(data ?? []));
+    if (!data || data.length < PAGE) break;
+  }
+  const authors = await authorProfiles(supabase, rows.map((r) => r.author_id));
+  return rows.map((r) => ({
+    ...r,
+    author_name: authors.get(r.author_id)?.name ?? "Unknown referee",
+    author_email: authors.get(r.author_id)?.email ?? null,
+  }));
 }
 
 export const listDeliveredReports = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertAdmin(context.supabase, context.userId);
-
-    // Page past PostgREST's 1,000-row cap so a full season never gets silently truncated.
-    const PAGE = 1000;
-    const rows: any[] = [];
-    for (let from = 0; ; from += PAGE) {
-      const { data, error } = await context.supabase
-        .from("entries")
-        .select(DELIVERED_REPORT_COLUMNS)
-        .eq("status", "saved_sent")
-        .not("sent_at", "is", null)
-        .order("sent_at", { ascending: false })
-        .order("id", { ascending: true })
-        .range(from, from + PAGE - 1);
-      if (error) throw new Error(error.message);
-      rows.push(...(data ?? []));
-      if (!data || data.length < PAGE) break;
-    }
-
-    const names = await authorNames(context.supabase, rows.map((r) => r.author_id));
-    return {
-      reports: rows.map((r) => ({ ...r, author_name: names.get(r.author_id) ?? "Unknown referee" })),
-    };
+    return { reports: await fetchDeliveredReports(context.supabase) };
   });
 
 export const getDeliveredReport = createServerFn({ method: "GET" })
@@ -324,6 +338,123 @@ export const getDeliveredReport = createServerFn({ method: "GET" })
       .maybeSingle();
     if (error) throw new Error(error.message);
     if (!report) return { report: null };
-    const names = await authorNames(context.supabase, [report.author_id]);
-    return { report: { ...report, author_name: names.get(report.author_id) ?? "Unknown referee" } };
+    const authors = await authorProfiles(context.supabase, [report.author_id]);
+    return { report: { ...report, author_name: authors.get(report.author_id)?.name ?? "Unknown referee" } };
+  });
+
+// ---------------------------------------------------------------------------
+// Bulk report export — same request → fulfill workflow as the activity log
+// export. Admins request a range of SENT dates (whole Pacific-time days,
+// inclusive); a super admin fulfills it, which returns the rows for the
+// browser to turn into a CSV and records the export in the activity log.
+// ---------------------------------------------------------------------------
+
+const ymd = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use a YYYY-MM-DD date");
+
+export const requestReportExport = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({
+    sentFrom: ymd.optional(),
+    sentTo: ymd.optional(),
+  }).refine((d) => !d.sentFrom || !d.sentTo || d.sentFrom <= d.sentTo, {
+    message: "The start date must be on or before the end date.",
+  }).parse(input))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const { data: request, error } = await context.supabase
+      .from("report_export_requests")
+      .insert({
+        requested_by: context.userId,
+        sent_from: data.sentFrom ?? null,
+        sent_to: data.sentTo ?? null,
+      })
+      .select()
+      .single();
+    if (error) throw new Error(error.message);
+    await logActivity(context.supabase, {
+      actorId: context.userId,
+      action: "report_export_requested",
+      targetId: request.id,
+      metadata: { sentFrom: request.sent_from, sentTo: request.sent_to },
+    });
+    return { request };
+  });
+
+export const listMyReportExportRequests = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const { data, error } = await context.supabase
+      .from("report_export_requests")
+      .select("id, sent_from, sent_to, status, report_count, fulfilled_at, created_at")
+      .eq("requested_by", context.userId)
+      .order("created_at", { ascending: false });
+    if (error) throw new Error(error.message);
+    return { requests: data ?? [] };
+  });
+
+export const listAllReportExportRequests = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertSuperAdmin(context.supabase, context.userId);
+    const { data, error } = await context.supabase
+      .from("report_export_requests")
+      .select("id, requested_by, sent_from, sent_to, status, report_count, fulfilled_at, created_at")
+      .order("created_at", { ascending: false });
+    if (error) throw new Error(error.message);
+    const requesters = await authorProfiles(context.supabase, (data ?? []).map((r: any) => r.requested_by));
+    return {
+      requests: (data ?? []).map((r: any) => ({ ...r, requester_name: requesters.get(r.requested_by)?.name ?? "Unknown" })),
+    };
+  });
+
+export const fulfillReportExportRequest = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ requestId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    await assertSuperAdmin(context.supabase, context.userId);
+
+    const { data: request, error: reqError } = await context.supabase
+      .from("report_export_requests")
+      .select("id, requested_by, sent_from, sent_to, status")
+      .eq("id", data.requestId)
+      .maybeSingle();
+    if (reqError) throw new Error(reqError.message);
+    if (!request) throw new Error("Request not found.");
+    if (request.status === "fulfilled") throw new Error("This request was already fulfilled.");
+
+    const range = pacificDayRange(request.sent_from, request.sent_to);
+    const reports = await fetchDeliveredReports(context.supabase, {
+      sentFrom: range.start,
+      sentBefore: range.endExclusive,
+      ascending: true,
+    });
+
+    const { data: updated, error: updateError } = await context.supabase
+      .from("report_export_requests")
+      .update({
+        status: "fulfilled",
+        report_count: reports.length,
+        fulfilled_at: new Date().toISOString(),
+        fulfilled_by: context.userId,
+      })
+      .eq("id", data.requestId)
+      .select()
+      .maybeSingle();
+    if (updateError) throw new Error(updateError.message);
+    if (!updated) throw new Error("Fulfill failed: no request was updated. Check RLS permissions on report_export_requests.");
+
+    await logActivity(context.supabase, {
+      actorId: context.userId,
+      action: "report_export_downloaded",
+      targetId: request.id,
+      metadata: {
+        requestedBy: request.requested_by,
+        sentFrom: request.sent_from,
+        sentTo: request.sent_to,
+        reportCount: reports.length,
+      },
+    });
+
+    return { reports, request: updated };
   });

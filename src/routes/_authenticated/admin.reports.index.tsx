@@ -8,6 +8,8 @@ import { isPreviewUserId } from "@/lib/preview-mode";
 import { entryStatusLabel, searchItems, type SearchField } from "@/lib/report-search";
 import { Highlight, MatchedFields, NoMatches, SearchBox } from "@/components/ReportSearch";
 import { GameDetails, formatGameDate } from "@/components/GameDetails";
+import { ReportExportPanel } from "@/components/ReportExportPanel";
+import { can } from "@/lib/permissions";
 
 export const Route = createFileRoute("/_authenticated/admin/reports/")({
   component: ReportsPage,
@@ -71,6 +73,10 @@ function ReportsPage() {
 
   return (
     <div className="space-y-3">
+      {me && can(me.role, "reportExport:request") && (
+        <ReportExportPanel isSuperAdmin={can(me.role, "reportExport:manage")} />
+      )}
+
       <p className="text-xs text-muted-foreground">Reports that were sent and delivered, newest first.</p>
 
       {reports.length === 0 && (
